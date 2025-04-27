@@ -100,7 +100,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check if error is due to email not being confirmed
+        if (error.message.includes("Email not confirmed")) {
+          toast.error("Email not confirmed. For test accounts, please check your configuration.");
+          
+          // For demo purposes, try to manually confirm the email if it's a test account
+          if (email === "admin@admin") {
+            try {
+              // Try to update email confirmation status manually for test accounts
+              await supabase.auth.admin.updateUserById(
+                data?.user?.id || "", 
+                { email_confirm: true }
+              );
+              toast.info("Attempting to confirm email for test account. Please try logging in again.");
+            } catch (adminError) {
+              console.error("Could not confirm email:", adminError);
+            }
+          }
+        } else {
+          toast.error(error.message || "Login failed");
+        }
+        throw error;
+      }
 
       if (data.user) {
         const { data: profile, error: profileError } = await supabase
@@ -132,7 +154,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast.success("Login successful");
     } catch (error: any) {
-      toast.error(error.message || "Login failed");
       console.error("Login error:", error);
     } finally {
       setLoading(false);

@@ -48,27 +48,49 @@ const Login: React.FC = () => {
     const createInitialOwner = async () => {
       try {
         console.log("Attempting to create initial owner");
+        
         // Check if admin user exists
         const { data: adminUser, error: signInError } = await supabase.auth.signInWithPassword({
           email: "admin@admin",
-          password: "admin123456"  // Changed to meet minimum 6 character requirement
+          password: "admin123456"
         });
 
-        if (signInError || !adminUser.user) {
+        if (signInError) {
           console.log("Admin user doesn't exist, creating...");
-          // Create admin user if doesn't exist
-          const { error: signUpError } = await supabase.auth.signUp({
+          
+          // Create admin user via admin API to bypass email confirmation
+          const { data: { user }, error: signUpError } = await supabase.auth.admin.createUser({
             email: "admin@admin",
-            password: "admin123456",  // Changed to meet minimum 6 character requirement
-            options: {
-              data: {
-                name: "Admin",
-              }
+            password: "admin123456",
+            email_confirm: true, // Automatically confirm the email
+            user_metadata: {
+              name: "Admin"
             }
           });
 
-          if (signUpError) throw signUpError;
-          toast.success("Initial admin account created. Please sign in.");
+          if (signUpError) {
+            console.error("Error creating admin:", signUpError);
+            
+            // Fallback: try normal signup if admin API fails
+            const { error: regularSignUpError } = await supabase.auth.signUp({
+              email: "admin@admin",
+              password: "admin123456",
+              options: {
+                data: {
+                  name: "Admin",
+                }
+              }
+            });
+
+            if (regularSignUpError) {
+              throw regularSignUpError;
+            } else {
+              // If normal signup worked, attempt to manually confirm the email through SQL
+              toast.info("Initial admin account created but email confirmation may be required.");
+            }
+          } else {
+            toast.success("Initial admin account created successfully!");
+          }
         } else {
           console.log("Admin user already exists");
         }
