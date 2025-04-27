@@ -1,0 +1,118 @@
+
+import React, { useState } from "react";
+import { Outlet } from "react-router-dom";
+import { ChevronLeft, ChevronRight, LogOut, Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+
+interface MainLayoutProps {
+  sidebarContent: React.ReactNode;
+}
+
+const MainLayout: React.FC<MainLayoutProps> = ({ sidebarContent }) => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Top header bar */}
+      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+        <div className="flex h-16 items-center px-4 md:px-6">
+          {/* Mobile menu button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleMobileMenu}
+            className="md:hidden mr-2"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          
+          {/* Desktop sidebar toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="hidden md:flex"
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="h-5 w-5" />
+            ) : (
+              <ChevronLeft className="h-5 w-5" />
+            )}
+          </Button>
+          
+          {/* App Title */}
+          <span className="font-bold text-lg md:text-xl ml-2">MM Billing</span>
+          
+          <div className="ml-auto flex items-center gap-2">
+            {/* User info */}
+            <div className="hidden md:flex flex-col items-end mr-4">
+              <span className="text-sm font-medium">{user?.name}</span>
+              <span className="text-xs text-muted-foreground capitalize">{user?.role}</span>
+            </div>
+            
+            {/* Logout button */}
+            <Button variant="ghost" size="icon" onClick={logout} title="Logout">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content area with sidebar */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Desktop sidebar */}
+        <aside 
+          className={cn(
+            "hidden md:block border-r bg-background transition-all duration-300 overflow-y-auto h-[calc(100vh-4rem)]",
+            sidebarCollapsed ? "w-sidebar-collapsed" : "w-sidebar-expanded"
+          )}
+        >
+          <div className={cn("py-4", sidebarCollapsed && "px-2")}>
+            {sidebarContent}
+          </div>
+        </aside>
+
+        {/* Mobile sidebar (as overlay) */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden">
+            <div className="fixed inset-y-0 left-0 z-50 w-3/4 max-w-xs bg-background shadow-lg">
+              <div className="flex h-16 items-center border-b px-4">
+                <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <span className="font-bold text-lg ml-2">MM Billing</span>
+              </div>
+              <div className="py-4 px-4 overflow-y-auto h-[calc(100vh-4rem)]">
+                {sidebarContent}
+              </div>
+            </div>
+            {/* Click outside to close */}
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={toggleMobileMenu}
+            />
+          </div>
+        )}
+
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default MainLayout;
