@@ -1,117 +1,130 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { User, Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// User roles
 export type UserRole = "owner" | "manager" | "cashier";
 
-// User interface
-export interface User {
+interface Profile {
   id: string;
   name: string;
-  email: string;
   role: UserRole;
-  shopId?: string;
+  shop_id?: string;
 }
 
-// Auth context interface
 interface AuthContextType {
   user: User | null;
+  profile: Profile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
 
-// Mock users for demo
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "Admin User",
-    email: "owner@mmbilling.com",
-    role: "owner"
-  },
-  {
-    id: "2",
-    name: "Shop Manager",
-    email: "manager@mmbilling.com",
-    role: "manager",
-    shopId: "shop1"
-  },
-  {
-    id: "3",
-    name: "Cashier User",
-    email: "cashier@mmbilling.com",
-    role: "cashier",
-    shopId: "shop1"
-  }
-];
-
-// Create auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Check for existing session on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("mm-billing-user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          setProfile(profile);
+        } else {
+          setProfile(null);
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data: profile }) => {
+            setProfile(profile);
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Mock login function - in a real app, this would call an API
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Simulate API call delay
-      await new Promise(r => setTimeout(r, 1000));
-      
-      const foundUser = mockUsers.find(u => u.email === email);
-      if (foundUser && password === "password") { // Simple mock password check
-        setUser(foundUser);
-        localStorage.setItem("mm-billing-user", JSON.stringify(foundUser));
-        
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
         // Redirect based on role
-        switch (foundUser.role) {
-          case "owner":
-            navigate("/owner/dashboard");
-            break;
-          case "manager":
-            navigate("/manager/dashboard");
-            break;
-          case "cashier":
-            navigate("/cashier/dashboard");
-            break;
+        if (profile) {
+          switch (profile.role) {
+            case "owner":
+              navigate("/owner/dashboard");
+              break;
+            case "manager":
+              navigate("/manager/dashboard");
+              break;
+            case "cashier":
+              navigate("/cashier/dashboard");
+              break;
+          }
         }
-        
-        toast.success("Login successful");
-      } else {
-        toast.error("Invalid email or password");
       }
-    } catch (error) {
-      toast.error("Login failed. Please try again.");
+      
+      toast.success("Login successful");
+    } catch (error: any) {
+      toast.error(error.message || "Login failed");
       console.error("Login error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Logout function
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem("mm-billing-user");
+    setProfile(null);
     navigate("/login");
     toast.success("Logged out successfully");
   };
 
   const value = {
     user,
+    profile,
     loading,
     login,
     logout,
@@ -121,7 +134,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -133,36 +145,37 @@ export const useAuth = () => {
 // Higher-order component to protect routes
 export const withAuth = (Component: React.ComponentType, requiredRole?: UserRole | UserRole[]) => {
   return (props: any) => {
-    const { user, loading, isAuthenticated } = useAuth();
+    const { user, profile, loading, isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
-      if (!loading && !isAuthenticated) {
-        navigate("/login");
-        return;
-      }
+      if (!loading) {
+        if (!isAuthenticated) {
+          navigate("/login");
+          return;
+        }
 
-      if (!loading && isAuthenticated && requiredRole) {
-        const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-        
-        if (user && !roles.includes(user.role)) {
-          // Redirect based on user's role if they don't have access
-          switch (user.role) {
-            case "owner":
-              navigate("/owner/dashboard");
-              break;
-            case "manager":
-              navigate("/manager/dashboard");
-              break;
-            case "cashier":
-              navigate("/cashier/dashboard");
-              break;
-            default:
-              navigate("/login");
+        if (requiredRole && profile) {
+          const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+          
+          if (!roles.includes(profile.role)) {
+            switch (profile.role) {
+              case "owner":
+                navigate("/owner/dashboard");
+                break;
+              case "manager":
+                navigate("/manager/dashboard");
+                break;
+              case "cashier":
+                navigate("/cashier/dashboard");
+                break;
+              default:
+                navigate("/login");
+            }
           }
         }
       }
-    }, [loading, isAuthenticated, user, navigate]);
+    }, [loading, isAuthenticated, profile, navigate]);
 
     if (loading) {
       return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -172,9 +185,9 @@ export const withAuth = (Component: React.ComponentType, requiredRole?: UserRole
       return null;
     }
 
-    if (requiredRole) {
+    if (requiredRole && profile) {
       const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-      if (user && !roles.includes(user.role)) {
+      if (!roles.includes(profile.role)) {
         return null;
       }
     }

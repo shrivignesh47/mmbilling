@@ -1,17 +1,49 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const { login, loading } = useAuth();
+  const [email, setEmail] = useState("admin@admin");
+  const [password, setPassword] = useState("admin");
+  const { login, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const createInitialOwner = async () => {
+      try {
+        // Check if admin user exists
+        const { data: adminUser } = await supabase.auth.signInWithPassword({
+          email: "admin@admin",
+          password: "admin"
+        });
+
+        if (!adminUser.user) {
+          // Create admin user if doesn't exist
+          const { error } = await supabase.auth.signUp({
+            email: "admin@admin",
+            password: "admin",
+            options: {
+              data: {
+                name: "Admin",
+              }
+            }
+          });
+
+          if (error) throw error;
+        }
+      } catch (error) {
+        console.error("Error creating initial owner:", error);
+      }
+    };
+
+    createInitialOwner();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,19 +67,13 @@ const Login: React.FC = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Button variant="link" className="px-0 font-normal h-auto text-xs" type="button">
-                  Forgot password?
-                </Button>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -56,18 +82,7 @@ const Login: React.FC = () => {
                 required
               />
             </div>
-
-            <div className="text-sm text-muted-foreground">
-              <p>Demo accounts:</p>
-              <ul className="mt-1 space-y-1">
-                <li>Owner: owner@mmbilling.com</li>
-                <li>Manager: manager@mmbilling.com</li>
-                <li>Cashier: cashier@mmbilling.com</li>
-                <li>Password for all: password</li>
-              </ul>
-            </div>
           </CardContent>
-          
           <CardFooter>
             <Button className="w-full" type="submit" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
