@@ -13,7 +13,7 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ sidebarContent }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -58,8 +58,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebarContent }) => {
           <div className="ml-auto flex items-center gap-2">
             {/* User info */}
             <div className="hidden md:flex flex-col items-end mr-4">
-              <span className="text-sm font-medium">{user?.name}</span>
-              <span className="text-xs text-muted-foreground capitalize">{user?.role}</span>
+              <span className="text-sm font-medium">{profile?.name}</span>
+              <span className="text-xs text-muted-foreground capitalize">{profile?.role}</span>
             </div>
             
             {/* Logout button */}
