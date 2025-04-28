@@ -18,6 +18,7 @@ import NotFound from "@/pages/NotFound";
 // Owner Pages
 import OwnerDashboard from "@/pages/dashboards/owner/OwnerDashboard";
 import Shops from "@/pages/owner/Shops";
+import Users from "@/pages/owner/Users";
 
 // Manager Pages
 import ManagerDashboard from "@/pages/dashboards/manager/ManagerDashboard";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/owner" element={<OwnerLayout />}>
               <Route path="dashboard" element={<OwnerDashboard />} />
               <Route path="shops" element={<Shops />} />
+              <Route path="users" element={<Users />} />
               <Route index element={<Navigate to="/owner/dashboard" />} />
               {/* More routes will be added here */}
             </Route>

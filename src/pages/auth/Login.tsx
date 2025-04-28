@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("admin@admin");
-  const [password, setPassword] = useState("admin123456"); // Changed to meet minimum 6 character requirement
+  const [password, setPassword] = useState("admin123456");
   const { login, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
