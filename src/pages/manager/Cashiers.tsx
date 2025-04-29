@@ -1,423 +1,312 @@
 
 import React, { useState, useEffect } from "react";
-import {
-  User, 
-  UserPlus,
-  Search, 
-  Trash2,
-  Edit
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useAuth } from "@/contexts/AuthContext";
+import { UserPlus, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface CashierProfile {
+interface Cashier {
   id: string;
-  name: string | null;
-  email?: string;
+  name: string;
+  email: string;
+  role: string;
 }
 
-const Cashiers: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [cashiers, setCashiers] = useState<CashierProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [selectedCashier, setSelectedCashier] = useState<CashierProfile | null>(null);
+const Cashiers = () => {
   const { profile } = useAuth();
-  
-  const createForm = useForm({
-    defaultValues: {
-      email: "",
-      password: "",
-      name: ""
+  const [cashiers, setCashiers] = useState<Cashier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddCashierDialog, setShowAddCashierDialog] = useState(false);
+  const [newCashierEmail, setNewCashierEmail] = useState("");
+  const [newCashierName, setNewCashierName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile?.shop_id) {
+      fetchCashiers();
     }
-  });
-  
-  const editForm = useForm({
-    defaultValues: {
-      name: ""
-    }
-  });
+  }, [profile?.shop_id]);
 
   const fetchCashiers = async () => {
-    if (!profile?.shop_id) {
-      setIsLoading(false);
-      return;
-    }
+    if (!profile?.shop_id) return;
     
-    setIsLoading(true);
+    setLoading(true);
+    setError(null);
+    
     try {
-      // First get all cashier profiles for this shop
+      // Fetch cashiers for this shop
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('role', 'cashier')
-        .eq('shop_id', profile.shop_id);
+        .eq('shop_id', profile.shop_id)
+        .eq('role', 'cashier');
       
       if (error) throw error;
       
-      // For each cashier, get their email from auth.users
-      const cashiersWithEmails = await Promise.all((data || []).map(async (cashier) => {
-        // We can't directly query auth.users, so we'll use the sessions table
-        const { data: userData, error: userError } = await supabase
-          .from('sessions') // Or another public table that might have user emails
-          .select('user_email')
-          .eq('user_id', cashier.id)
-          .limit(1);
+      if (data) {
+        const formattedCashiers: Cashier[] = data.map(cashier => ({
+          id: cashier.id,
+          name: cashier.name || 'Unnamed Cashier',
+          email: cashier.email || 'No email',
+          role: cashier.role
+        }));
         
-        return {
-          ...cashier,
-          email: userData && userData.length > 0 ? userData[0].user_email : undefined
-        };
-      }));
-      
-      setCashiers(cashiersWithEmails);
-    } catch (error) {
-      console.error('Error fetching cashiers:', error);
-      toast.error('Failed to fetch cashiers');
+        setCashiers(formattedCashiers);
+      }
+    } catch (err: any) {
+      console.error('Error fetching cashiers:', err);
+      setError('Failed to load cashiers. ' + err.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchCashiers();
-  }, [profile?.shop_id]);
-
-  const handleCreateCashier = async (values: any) => {
+  const handleAddCashier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!profile?.shop_id) {
-      toast.error('You must be assigned to a shop to create cashiers');
+      toast.error('No shop assigned to you');
       return;
     }
     
+    if (!newCashierEmail || !newCashierName) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError(null);
+    
     try {
-      // Create the auth user
-      const { data, error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
+      // Check if the user with that email already exists
+      const { data: existingUsers, error: existingError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', newCashierEmail);
+      
+      if (existingError) throw existingError;
+      
+      if (existingUsers && existingUsers.length > 0) {
+        toast.error('A user with that email already exists');
+        return;
+      }
+      
+      // Create a new auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newCashierEmail,
+        password: 'temporary-password-' + Math.random().toString(36).substring(2, 10),
         options: {
           data: {
-            name: values.name
+            name: newCashierName,
+            role: 'cashier'
           }
         }
       });
-
-      if (error) {
-        throw error;
+      
+      if (authError) throw authError;
+      
+      if (!authData.user) {
+        throw new Error('Failed to create user');
       }
       
-      if (!data.user) {
-        throw new Error('Failed to create user account');
-      }
-
-      const userId = data.user.id;
-      
-      // Update the profile with role and shop assignment
+      // Update the profile with shop_id
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
-          role: "cashier",
-          shop_id: profile.shop_id
+          shop_id: profile.shop_id, 
+          name: newCashierName,
+          email: newCashierEmail 
         })
-        .eq('id', userId);
+        .eq('id', authData.user.id);
       
       if (profileError) throw profileError;
       
-      toast.success('Cashier created successfully');
-      createForm.reset();
-      setIsCreateDialogOpen(false);
+      toast.success('Cashier added successfully');
+      setNewCashierEmail("");
+      setNewCashierName("");
+      setShowAddCashierDialog(false);
       
-      // Refresh the cashier list
+      // Refresh cashiers list
       fetchCashiers();
-      
-    } catch (error: any) {
-      console.error('Error creating cashier:', error);
-      toast.error(error.message || 'Failed to create cashier');
+    } catch (err: any) {
+      console.error('Error adding cashier:', err);
+      setError('Failed to add cashier. ' + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleEditCashier = async (values: any) => {
-    if (!selectedCashier) return;
+  const handleRemoveCashier = async (cashierId: string) => {
+    if (!confirm('Are you sure you want to remove this cashier?')) return;
     
     try {
-      // Update the profile
-      const { error: profileError } = await supabase
+      // Just remove the cashier's association with the shop, don't delete the user
+      const { error } = await supabase
         .from('profiles')
         .update({ 
-          name: values.name
+          shop_id: null
         })
-        .eq('id', selectedCashier.id);
+        .eq('id', cashierId);
       
-      if (profileError) throw profileError;
+      if (error) throw error;
       
-      toast.success('Cashier updated successfully');
-      editForm.reset();
-      setIsEditDialogOpen(false);
-      setSelectedCashier(null);
+      toast.success('Cashier removed successfully');
       
-      // Refresh the cashier list
+      // Refresh cashiers list
       fetchCashiers();
-      
-    } catch (error: any) {
-      console.error('Error updating cashier:', error);
-      toast.error(error.message || 'Failed to update cashier');
+    } catch (err: any) {
+      console.error('Error removing cashier:', err);
+      toast.error('Failed to remove cashier: ' + err.message);
     }
   };
-
-  const handleDeleteCashier = async (cashierId: string) => {
-    if (window.confirm('Are you sure you want to delete this cashier?')) {
-      try {
-        // Delete the user from auth
-        const { error } = await supabase.auth.admin.deleteUser(cashierId);
-        
-        if (error) {
-          // Fallback to just removing from this shop
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .update({ shop_id: null })
-            .eq('id', cashierId);
-            
-          if (profileError) throw profileError;
-          toast.success('Cashier removed from shop');
-        } else {
-          toast.success('Cashier deleted successfully');
-        }
-        
-        fetchCashiers();
-      } catch (error: any) {
-        console.error('Error deleting cashier:', error);
-        toast.error(error.message || 'Failed to delete cashier');
-      }
-    }
-  };
-
-  const handleEditClick = (cashier: CashierProfile) => {
-    setSelectedCashier(cashier);
-    editForm.reset({
-      name: cashier.name || ''
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  // Filter cashiers based on search term
-  const filteredCashiers = searchTerm 
-    ? cashiers.filter(cashier => 
-        (cashier.name && cashier.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (cashier.email && cashier.email.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-    : cashiers;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Cashiers</h2>
-        <p className="text-muted-foreground">
-          Manage cashiers for your shop
-        </p>
-      </div>
-
-      {/* Cashier Management Section */}
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
-          <div>
-            <CardTitle>Manage Cashiers</CardTitle>
-            <CardDescription>
-              Create, edit and manage cashier accounts
-            </CardDescription>
-          </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Cashiers</h2>
+          <p className="text-muted-foreground">
+            Manage cashiers for your shop
+          </p>
+        </div>
+        
+        {profile?.shop_id && (
+          <Dialog open={showAddCashierDialog} onOpenChange={setShowAddCashierDialog}>
             <DialogTrigger asChild>
-              <Button className="w-full md:w-auto">
+              <Button>
                 <UserPlus className="mr-2 h-4 w-4" />
                 Add Cashier
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create New Cashier</DialogTitle>
+                <DialogTitle>Add New Cashier</DialogTitle>
                 <DialogDescription>
-                  Add a new cashier to your shop.
+                  Add a new cashier to your shop. They will receive an email with login instructions.
                 </DialogDescription>
               </DialogHeader>
-              <Form {...createForm}>
-                <form onSubmit={createForm.handleSubmit(handleCreateCashier)} className="space-y-4">
-                  <FormField
-                    control={createForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter full name" {...field} required />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={createForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="Email address" {...field} required />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={createForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <div className="relative">
-                          <FormControl>
-                            <Input 
-                              type={showPassword ? "text" : "password"} 
-                              placeholder="Set password" 
-                              {...field} 
-                              required
-                              minLength={6}
-                            />
-                          </FormControl>
-                          <button 
-                            type="button" 
-                            className="absolute right-2 top-2.5 text-muted-foreground text-xs"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? "HIDE" : "SHOW"}
-                          </button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <DialogFooter>
-                    <Button type="submit" className="w-full sm:w-auto">Create Cashier</Button>
-                  </DialogFooter>
-                </form>
-              </Form>
+              <form onSubmit={handleAddCashier}>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cashierName">Name</Label>
+                    <Input
+                      id="cashierName"
+                      value={newCashierName}
+                      onChange={(e) => setNewCashierName(e.target.value)}
+                      placeholder="Enter cashier name"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cashierEmail">Email</Label>
+                    <Input
+                      id="cashierEmail"
+                      type="email"
+                      value={newCashierEmail}
+                      onChange={(e) => setNewCashierEmail(e.target.value)}
+                      placeholder="Enter cashier email"
+                      required
+                    />
+                  </div>
+                  
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setShowAddCashierDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Adding...' : 'Add Cashier'}
+                  </Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
+        )}
+      </div>
+      
+      {!profile?.shop_id && (
+        <Alert>
+          <AlertDescription>
+            You haven't been assigned to a shop yet. Please contact the owner to assign you to a shop.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="pb-2">
+                <div className="h-5 bg-muted rounded w-1/2"></div>
+                <div className="h-3 bg-muted rounded w-1/3"></div>
+              </CardHeader>
+              <CardContent className="pb-6">
+                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-muted rounded w-1/2"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <>
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           
-          {/* Edit Cashier Dialog */}
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Edit Cashier</DialogTitle>
-                <DialogDescription>
-                  Update cashier details.
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...editForm}>
-                <form onSubmit={editForm.handleSubmit(handleEditCashier)} className="space-y-4">
-                  <FormField
-                    control={editForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter full name" {...field} required />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <DialogFooter>
-                    <Button type="submit" className="w-full sm:w-auto">Save Changes</Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-
-        <CardContent>
-          {/* Search */}
-          <div className="mb-6 relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search cashiers..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          {!error && cashiers.length === 0 && (
+            <Card>
+              <CardContent className="py-10 text-center">
+                <p className="text-muted-foreground mb-6">No cashiers found for your shop.</p>
+                <Button onClick={() => setShowAddCashierDialog(true)}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Your First Cashier
+                </Button>
+              </CardContent>
+            </Card>
+          )}
           
-          {isLoading ? (
-            <div className="text-center py-8">
-              <p>Loading cashiers...</p>
-            </div>
-          ) : (
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredCashiers.map((cashier) => (
-                <Card key={cashier.id} className="overflow-hidden">
-                  <div className="h-1 w-full bg-primary"></div>
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-base">{cashier.name || "Unnamed Cashier"}</CardTitle>
-                    </div>
+          {cashiers.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-3">
+              {cashiers.map((cashier) => (
+                <Card key={cashier.id}>
+                  <CardHeader>
+                    <CardTitle>{cashier.name}</CardTitle>
+                    <CardDescription>Cashier</CardDescription>
                   </CardHeader>
-                  <CardContent className="pb-3">
-                    {cashier.email && (
-                      <div className="text-sm mb-2 text-muted-foreground">
-                        {cashier.email}
-                      </div>
-                    )}
+                  <CardContent>
+                    <p className="text-sm mb-4">{cashier.email}</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleRemoveCashier(cashier.id)}
+                    >
+                      Remove from Shop
+                    </Button>
                   </CardContent>
-                  <CardFooter className="border-t bg-muted/50 pt-3">
-                    <div className="flex justify-between w-full">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditClick(cashier)}
-                      >
-                        <Edit className="mr-1 h-3 w-3" />
-                        Edit
-                      </Button>
-                      
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive"
-                        onClick={() => handleDeleteCashier(cashier.id)}
-                      >
-                        <Trash2 className="mr-1 h-3 w-3" />
-                        Delete
-                      </Button>
-                    </div>
-                  </CardFooter>
                 </Card>
               ))}
-              
-              {filteredCashiers.length === 0 && (
-                <div className="col-span-full py-12 text-center">
-                  <User className="mx-auto h-10 w-10 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-medium">No cashiers found</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {cashiers.length === 0 
-                      ? "No cashiers have been added to your shop yet. Get started by adding a cashier." 
-                      : "No cashiers match your search criteria. Try adjusting your search."}
-                  </p>
-                </div>
-              )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </>
+      )}
     </div>
   );
 };

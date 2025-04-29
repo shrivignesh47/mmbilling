@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Package, 
@@ -21,6 +22,14 @@ import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  addToBill, 
+  updateItemQuantity as updateItemQty, 
+  removeItem as removeCartItem, 
+  clearBill as clearCart,
+  getTotalAmount,
+  downloadReceipt as downloadReceiptFile
+} from "@/components/utils/BillingUtils";
 
 interface Product {
   id: string;
@@ -86,7 +95,6 @@ const Billing = () => {
     if (!profile?.shop_id) return;
 
     try {
-      // Here's where the error was - using the PostgrestQueryBuilder with "products" 
       const { data, error } = await supabase
         .from("products")
         .select('*')
@@ -96,7 +104,6 @@ const Billing = () => {
       
       if (error) throw error;
       
-      // Type safety for the returned data
       if (data) {
         const typedProducts: Product[] = data.map(product => ({
           id: product.id,
@@ -120,7 +127,6 @@ const Billing = () => {
     if (!profile?.shop_id) return;
 
     try {
-      // Here's where another error was - using the PostgrestQueryBuilder with "transactions"
       const { data, error } = await supabase
         .from("transactions")
         .select('*')
@@ -137,7 +143,7 @@ const Billing = () => {
           transaction_id: transaction.transaction_id,
           created_at: transaction.created_at,
           amount: transaction.amount,
-          items: transaction.items as BillItem[],
+          items: parseTransactionItems(transaction.items),
           payment_method: transaction.payment_method
         }));
         
@@ -148,79 +154,58 @@ const Billing = () => {
     }
   };
 
-  const addToBill = (product: Product) => {
-    // Check if product has enough stock
-    if (product.stock <= 0) {
-      toast.error('This product is out of stock');
-      return;
-    }
-
-    // Check if product is already in bill
-    const existingItemIndex = billItems.findIndex(item => item.productId === product.id);
-    
-    if (existingItemIndex >= 0) {
-      // Check if we have enough stock for additional item
-      const currentQuantity = billItems[existingItemIndex].quantity;
-      
-      if (currentQuantity >= product.stock) {
-        toast.error('Not enough stock available');
-        return;
+  // Helper function to parse transaction items
+  const parseTransactionItems = (items: any): BillItem[] => {
+    try {
+      // If it's already in correct format, return as is
+      if (Array.isArray(items) && items.every(item => 
+          typeof item === 'object' && 
+          'productId' in item && 
+          'name' in item && 
+          'price' in item && 
+          'quantity' in item)) {
+        return items as BillItem[];
       }
       
-      // Increment quantity
-      const updatedItems = [...billItems];
-      updatedItems[existingItemIndex].quantity += 1;
-      setBillItems(updatedItems);
-    } else {
-      // Add new item
-      setBillItems([
-        ...billItems,
-        {
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-          quantity: 1
+      // If it's a JSON string, parse it
+      if (typeof items === 'string') {
+        return JSON.parse(items) as BillItem[];
+      }
+      
+      // If it's a JSON object from Supabase, try to convert it
+      if (typeof items === 'object') {
+        if (Array.isArray(items)) {
+          return items.map(item => ({
+            productId: item.productId || item.product_id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity
+          }));
         }
-      ]);
-    }
-
-    toast.success(`Added ${product.name} to bill`);
-  };
-
-  const updateItemQuantity = (index: number, quantity: number) => {
-    if (quantity <= 0) {
-      // Remove item if quantity is 0 or less
-      removeItem(index);
-      return;
-    }
-
-    const product = products.find(p => p.id === billItems[index].productId);
-    
-    if (product && quantity > product.stock) {
-      toast.error(`Only ${product.stock} in stock`);
-      return;
-    }
-
-    const updatedItems = [...billItems];
-    updatedItems[index].quantity = quantity;
-    setBillItems(updatedItems);
-  };
-
-  const removeItem = (index: number) => {
-    setBillItems(billItems.filter((_, i) => i !== index));
-  };
-
-  const clearBill = () => {
-    if (billItems.length === 0) return;
-    
-    if (window.confirm('Are you sure you want to clear the current bill?')) {
-      setBillItems([]);
-      toast.info('Bill cleared');
+      }
+      
+      // Fallback
+      return [];
+    } catch (e) {
+      console.error("Error parsing transaction items:", e);
+      return [];
     }
   };
 
-  const getTotalAmount = () => {
-    return billItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const handleAddToBill = (product: Product) => {
+    addToBill(product, billItems, setBillItems, toast);
+  };
+
+  const handleUpdateItemQuantity = (index: number, quantity: number) => {
+    updateItemQty(index, quantity, billItems, setBillItems, products, toast, handleRemoveItem);
+  };
+
+  const handleRemoveItem = (index: number) => {
+    removeCartItem(index, billItems, setBillItems);
+  };
+
+  const handleClearBill = () => {
+    clearCart(billItems, setBillItems, toast);
   };
 
   const handleCheckout = async () => {
@@ -245,12 +230,11 @@ const Billing = () => {
         shop_id: profile.shop_id,
         cashier_id: profile.id,
         transaction_id: transactionId,
-        amount: getTotalAmount(),
+        amount: getTotalAmount(billItems),
         items: billItems,
         payment_method: paymentMethod
       };
 
-      // Here's where another error was - using insert with transaction data
       const { data: transactionResult, error: transactionError } = await supabase
         .from("transactions")
         .insert([transactionData])
@@ -261,7 +245,6 @@ const Billing = () => {
 
       // Update product stock and sales count
       for (const item of billItems) {
-        // Here's where another error was - using update with products
         const { error: stockError } = await supabase
           .from("products")
           .update({ 
@@ -283,8 +266,18 @@ const Billing = () => {
 
       // Show success message
       toast.success('Payment processed successfully');
-      setReceiptData(transactionResult);
-      setIsReceiptDialogOpen(true);
+      
+      if (transactionResult) {
+        setReceiptData({
+          id: transactionResult.id,
+          transaction_id: transactionResult.transaction_id,
+          created_at: transactionResult.created_at,
+          amount: transactionResult.amount,
+          items: parseTransactionItems(transactionResult.items),
+          payment_method: transactionResult.payment_method
+        });
+        setIsReceiptDialogOpen(true);
+      }
       
       // Reset the bill
       setBillItems([]);
@@ -301,37 +294,8 @@ const Billing = () => {
     }
   };
 
-  const downloadReceipt = () => {
-    if (!receiptRef.current || !receiptData) return;
-
-    const receiptContent = receiptRef.current.innerHTML;
-    const blob = new Blob([`
-      <html>
-        <head>
-          <title>Receipt</title>
-          <style>
-            body { font-family: sans-serif; padding: 20px; }
-            .receipt { max-width: 400px; margin: 0 auto; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .items { margin: 20px 0; }
-            .item { display: flex; justify-content: space-between; margin-bottom: 8px; }
-            .total { font-weight: bold; border-top: 1px solid #ccc; padding-top: 10px; }
-          </style>
-        </head>
-        <body>
-          ${receiptContent}
-        </body>
-      </html>
-    `], { type: 'text/html' });
-    
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `receipt-${receiptData.transaction_id}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleDownloadReceipt = () => {
+    downloadReceiptFile(receiptRef, receiptData);
   };
 
   const viewTransaction = async (transaction: Transaction) => {
@@ -393,7 +357,7 @@ const Billing = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => addToBill(product)}
+                    onClick={() => handleAddToBill(product)}
                     className="w-full"
                     disabled={product.stock <= 0}
                   >
@@ -424,7 +388,7 @@ const Billing = () => {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={clearBill}
+              onClick={handleClearBill}
               disabled={billItems.length === 0}
               className="text-destructive"
             >
@@ -446,7 +410,7 @@ const Billing = () => {
                         variant="outline" 
                         size="icon" 
                         className="h-6 w-6" 
-                        onClick={() => updateItemQuantity(index, item.quantity - 1)}
+                        onClick={() => handleUpdateItemQuantity(index, item.quantity - 1)}
                       >
                         -
                       </Button>
@@ -455,7 +419,7 @@ const Billing = () => {
                         variant="outline" 
                         size="icon" 
                         className="h-6 w-6"
-                        onClick={() => updateItemQuantity(index, item.quantity + 1)}
+                        onClick={() => handleUpdateItemQuantity(index, item.quantity + 1)}
                       >
                         +
                       </Button>
@@ -463,7 +427,7 @@ const Billing = () => {
                         variant="ghost" 
                         size="icon" 
                         className="h-6 w-6 text-destructive"
-                        onClick={() => removeItem(index)}
+                        onClick={() => handleRemoveItem(index)}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -481,7 +445,7 @@ const Billing = () => {
           <CardFooter className="flex flex-col space-y-4">
             <div className="flex items-center justify-between w-full border-t pt-4">
               <span className="font-semibold text-lg">Total:</span>
-              <span className="font-bold text-lg">${getTotalAmount().toFixed(2)}</span>
+              <span className="font-bold text-lg">${getTotalAmount(billItems).toFixed(2)}</span>
             </div>
             <Button 
               className="w-full" 
@@ -567,7 +531,7 @@ const Billing = () => {
           <div className="space-y-4 py-4">
             <div className="flex justify-between">
               <span>Total Amount:</span>
-              <span className="font-bold">${getTotalAmount().toFixed(2)}</span>
+              <span className="font-bold">${getTotalAmount(billItems).toFixed(2)}</span>
             </div>
             
             <div className="space-y-2">
@@ -676,7 +640,7 @@ const Billing = () => {
               Close
             </Button>
             <Button 
-              onClick={downloadReceipt}
+              onClick={handleDownloadReceipt}
             >
               <Download className="mr-2 h-4 w-4" />
               Download

@@ -18,6 +18,21 @@ interface Product {
   sales_count: number;
 }
 
+interface InventoryAlert {
+  type: 'out_of_stock' | 'low_stock' | 'restock';
+  name: string;
+  message: string;
+  time: string;
+}
+
+interface InventoryLog {
+  id: string;
+  product_name: string;
+  quantity: number;
+  action: string;
+  created_at: string;
+}
+
 const ManagerDashboard: React.FC = () => {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -27,7 +42,7 @@ const ManagerDashboard: React.FC = () => {
   const [inStockCount, setInStockCount] = useState(0);
   const [lowStockCount, setLowStockCount] = useState(0);
   const [topProducts, setTopProducts] = useState<Product[]>([]);
-  const [inventoryAlerts, setInventoryAlerts] = useState<any[]>([]);
+  const [inventoryAlerts, setInventoryAlerts] = useState<InventoryAlert[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -84,7 +99,7 @@ const ManagerDashboard: React.FC = () => {
         setTopProducts(topSellingProducts || []);
         
         // Get inventory alerts
-        const alerts = [];
+        const alerts: InventoryAlert[] = [];
         
         // Out of stock items
         const outOfStock = products?.filter(p => p.stock === 0) || [];
@@ -108,7 +123,7 @@ const ManagerDashboard: React.FC = () => {
           });
         }
         
-        // Recently restocked
+        // Recently restocked - use inventory_logs table
         const { data: recentlyRestocked, error: restockedError } = await supabase
           .from('inventory_logs')
           .select('*')
@@ -118,11 +133,12 @@ const ManagerDashboard: React.FC = () => {
           .limit(1);
           
         if (!restockedError && recentlyRestocked && recentlyRestocked.length > 0) {
+          const restock = recentlyRestocked[0] as unknown as InventoryLog;
           alerts.push({
             type: 'restock',
-            name: recentlyRestocked[0].product_name,
-            message: `${recentlyRestocked[0].quantity} units added`,
-            time: new Date(recentlyRestocked[0].created_at).toLocaleDateString()
+            name: restock.product_name,
+            message: `${restock.quantity} units added`,
+            time: new Date(restock.created_at).toLocaleDateString()
           });
         }
         

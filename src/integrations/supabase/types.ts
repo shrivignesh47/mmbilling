@@ -9,6 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      inventory_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          product_id: string
+          product_name: string
+          quantity: number
+          shop_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          product_id: string
+          product_name: string
+          quantity: number
+          shop_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          product_id?: string
+          product_name?: string
+          quantity?: number
+          shop_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_logs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_logs_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null
@@ -59,6 +107,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          email: string | null
           id: string
           name: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -67,6 +116,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          email?: string | null
           id: string
           name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -75,6 +125,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          email?: string | null
           id?: string
           name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
