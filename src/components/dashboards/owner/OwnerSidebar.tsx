@@ -4,10 +4,8 @@ import { NavLink } from "react-router-dom";
 import {
   BarChart3,
   Building2,
-  CreditCard,
   LogOut,
   Settings,
-  ShoppingBag,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,10 +32,10 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
     return (
       <button
         onClick={onClick}
-        className="sidebar-item w-full text-left"
+        className="sidebar-item w-full text-left flex items-center py-2 px-3 text-sm font-medium rounded-md hover:bg-muted transition-colors"
       >
-        <Icon size={20} />
-        {!collapsed && <span>{children}</span>}
+        <Icon size={20} className="flex-shrink-0" />
+        {!collapsed && <span className="ml-3 truncate">{children}</span>}
       </button>
     );
   }
@@ -47,11 +45,14 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
       to={to}
       end={end}
       className={({ isActive }) =>
-        cn("sidebar-item", isActive && "sidebar-item-active")
+        cn(
+          "sidebar-item flex items-center py-2 px-3 text-sm font-medium rounded-md hover:bg-muted transition-colors",
+          isActive ? "bg-muted text-primary" : "text-muted-foreground"
+        )
       }
     >
-      <Icon size={20} />
-      {!collapsed && <span>{children}</span>}
+      <Icon size={20} className="flex-shrink-0" />
+      {!collapsed && <span className="ml-3 truncate">{children}</span>}
     </NavLink>
   );
 };
@@ -64,7 +65,11 @@ const OwnerSidebar: React.FC<OwnerSidebarProps> = ({ collapsed = false }) => {
   const { logout } = useAuth();
   
   const handleLogout = async () => {
-    await logout();
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   return (
@@ -84,12 +89,6 @@ const OwnerSidebar: React.FC<OwnerSidebarProps> = ({ collapsed = false }) => {
         </SidebarItem>
         <SidebarItem to="/owner/users" icon={Users} collapsed={collapsed}>
           Users
-        </SidebarItem>
-        <SidebarItem to="/owner/products" icon={ShoppingBag} collapsed={collapsed}>
-          Products
-        </SidebarItem>
-        <SidebarItem to="/owner/subscriptions" icon={CreditCard} collapsed={collapsed}>
-          Subscriptions
         </SidebarItem>
         <SidebarItem to="/owner/settings" icon={Settings} collapsed={collapsed}>
           Settings

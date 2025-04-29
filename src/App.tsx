@@ -19,6 +19,7 @@ import NotFound from "@/pages/NotFound";
 import OwnerDashboard from "@/pages/dashboards/owner/OwnerDashboard";
 import Shops from "@/pages/owner/Shops";
 import Users from "@/pages/owner/Users";
+import Settings from "@/pages/owner/Settings";
 
 // Manager Pages
 import ManagerDashboard from "@/pages/dashboards/manager/ManagerDashboard";
@@ -47,8 +48,8 @@ const App = () => (
               <Route path="dashboard" element={<OwnerDashboard />} />
               <Route path="shops" element={<Shops />} />
               <Route path="users" element={<Users />} />
+              <Route path="settings" element={<Settings />} />
               <Route index element={<Navigate to="/owner/dashboard" />} />
-              {/* More routes will be added here */}
             </Route>
 
             {/* Manager Routes */}
@@ -56,7 +57,6 @@ const App = () => (
               <Route path="dashboard" element={<ManagerDashboard />} />
               <Route path="inventory" element={<Inventory />} />
               <Route index element={<Navigate to="/manager/dashboard" />} />
-              {/* More routes will be added here */}
             </Route>
 
             {/* Cashier Routes */}
@@ -64,7 +64,6 @@ const App = () => (
               <Route path="dashboard" element={<CashierDashboard />} />
               <Route path="billing" element={<Billing />} />
               <Route index element={<Navigate to="/cashier/dashboard" />} />
-              {/* More routes will be added here */}
             </Route>
 
             {/* Catch-all route */}

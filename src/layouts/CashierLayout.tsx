@@ -1,12 +1,22 @@
 
-import React from "react";
+import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import CashierSidebar from "@/components/dashboards/cashier/CashierSidebar";
 import { withAuth } from "@/contexts/AuthContext";
 
 const CashierLayout: React.FC = () => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   return (
-    <MainLayout sidebarContent={<CashierSidebar />} />
+    <MainLayout 
+      sidebarContent={<CashierSidebar collapsed={sidebarCollapsed} />} 
+      sidebarCollapsed={sidebarCollapsed}
+      toggleSidebar={toggleSidebar}
+    />
   );
 };
 

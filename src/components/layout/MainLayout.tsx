@@ -8,23 +8,32 @@ import { cn } from "@/lib/utils";
 
 interface MainLayoutProps {
   sidebarContent: React.ReactNode;
+  sidebarCollapsed?: boolean;
+  toggleSidebar?: () => void;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ sidebarContent }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+const MainLayout: React.FC<MainLayoutProps> = ({ 
+  sidebarContent, 
+  sidebarCollapsed = false,
+  toggleSidebar = () => {}
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile, logout } = useAuth();
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Top header bar */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="flex h-16 items-center px-4 md:px-6">
@@ -34,6 +43,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebarContent }) => {
             size="icon" 
             onClick={toggleMobileMenu}
             className="md:hidden mr-2"
+            aria-label="Toggle mobile menu"
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -44,6 +54,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebarContent }) => {
             size="icon"
             onClick={toggleSidebar}
             className="hidden md:flex"
+            aria-label="Toggle sidebar"
           >
             {sidebarCollapsed ? (
               <ChevronRight className="h-5 w-5" />
@@ -63,7 +74,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebarContent }) => {
             </div>
             
             {/* Logout button */}
-            <Button variant="ghost" size="icon" onClick={logout} title="Logout">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleLogout} 
+              title="Logout"
+              aria-label="Logout"
+            >
               <LogOut className="h-5 w-5" />
             </Button>
           </div>
@@ -76,7 +93,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebarContent }) => {
         <aside 
           className={cn(
             "hidden md:block border-r bg-background transition-all duration-300 overflow-y-auto h-[calc(100vh-4rem)]",
-            sidebarCollapsed ? "w-sidebar-collapsed" : "w-sidebar-expanded"
+            sidebarCollapsed ? "w-16" : "w-64"
           )}
         >
           <div className={cn("py-4", sidebarCollapsed && "px-2")}>
@@ -86,10 +103,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebarContent }) => {
 
         {/* Mobile sidebar (as overlay) */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden">
-            <div className="fixed inset-y-0 left-0 z-50 w-3/4 max-w-xs bg-background shadow-lg">
+          <>
+            <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden" />
+            <div className="fixed inset-y-0 left-0 z-50 w-3/4 max-w-xs bg-background shadow-lg md:hidden">
               <div className="flex h-16 items-center border-b px-4">
-                <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={toggleMobileMenu}
+                  aria-label="Close mobile menu"
+                >
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
                 <span className="font-bold text-lg ml-2">MM Billing</span>
@@ -100,10 +123,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebarContent }) => {
             </div>
             {/* Click outside to close */}
             <div 
-              className="fixed inset-0 z-40" 
+              className="fixed inset-0 z-40 md:hidden" 
               onClick={toggleMobileMenu}
             />
-          </div>
+          </>
         )}
 
         {/* Main content */}

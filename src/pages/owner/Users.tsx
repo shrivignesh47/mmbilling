@@ -8,7 +8,8 @@ import {
   ShieldCheck, 
   ShoppingBag,
   Trash2,
-  Building2
+  Building2,
+  Edit
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { UserRole } from "@/contexts/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface UserProfile {
   id: string;
@@ -36,15 +38,25 @@ const Users: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [shops, setShops] = useState<{ id: string, name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   
-  const form = useForm({
+  const createForm = useForm({
     defaultValues: {
       email: "",
       password: "",
       name: "",
-      role: "manager" as UserRole, // Fixed: Always set to manager
+      role: "manager" as UserRole,
+      shop_id: ""
+    }
+  });
+  
+  const editForm = useForm({
+    defaultValues: {
+      name: "",
+      role: "manager" as UserRole,
       shop_id: ""
     }
   });
@@ -109,7 +121,7 @@ const Users: React.FC = () => {
     // Set up realtime subscription for profiles table
     const profilesSubscription = supabase
       .channel('profiles-channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
         fetchUsers(); // Refetch when data changes
       })
       .subscribe();
@@ -121,39 +133,21 @@ const Users: React.FC = () => {
 
   const handleCreateUser = async (values: any) => {
     try {
-      // First create the auth user
-      const { data, error } = await supabase.auth.admin.createUser({
+      // Create the auth user
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
-        email_confirm: true,
-        user_metadata: {
-          name: values.name,
+        options: {
+          data: {
+            name: values.name
+          }
         }
       });
 
       if (error) {
-        // Try regular signup as fallback
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: values.email,
-          password: values.password,
-          options: {
-            data: {
-              name: values.name
-            }
-          }
-        });
-
-        if (signUpError) {
-          throw signUpError;
-        }
-        
-        if (signUpData.user) {
-          data.user = signUpData.user;
-        } else {
-          throw new Error('Failed to create user account');
-        }
+        throw error;
       }
-
+      
       if (!data.user) {
         throw new Error('Failed to create user account');
       }
@@ -164,7 +158,7 @@ const Users: React.FC = () => {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
-          role: "manager", // Fixed: Always set to manager
+          role: "manager",
           shop_id: values.shop_id || null
         })
         .eq('id', userId);
@@ -172,8 +166,8 @@ const Users: React.FC = () => {
       if (profileError) throw profileError;
       
       toast.success('Manager created successfully');
-      form.reset();
-      setIsDialogOpen(false);
+      createForm.reset();
+      setIsCreateDialogOpen(false);
       
       // If assigned to a shop, update the shop's manager_id
       if (values.shop_id) {
@@ -197,6 +191,57 @@ const Users: React.FC = () => {
     }
   };
 
+  const handleEditUser = async (values: any) => {
+    if (!selectedUser) return;
+    
+    try {
+      // Update the profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          name: values.name,
+          shop_id: values.shop_id || null
+        })
+        .eq('id', selectedUser.id);
+      
+      if (profileError) throw profileError;
+      
+      // If assigned to a shop, update the shop's manager_id
+      if (values.shop_id) {
+        // First clear any previous manager_id references to this user
+        if (selectedUser.shop_id) {
+          await supabase
+            .from('shops')
+            .update({ manager_id: null })
+            .eq('manager_id', selectedUser.id);
+        }
+        
+        // Then assign to the new shop
+        const { error: shopError } = await supabase
+          .from('shops')
+          .update({ manager_id: selectedUser.id })
+          .eq('id', values.shop_id);
+        
+        if (shopError) {
+          console.error('Error updating shop manager:', shopError);
+          toast.error('User updated but failed to update shop manager');
+        }
+      }
+      
+      toast.success('User updated successfully');
+      editForm.reset();
+      setIsEditDialogOpen(false);
+      setSelectedUser(null);
+      
+      // Refresh the user list
+      fetchUsers();
+      
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      toast.error(error.message || 'Failed to update user');
+    }
+  };
+
   const handleDeleteUser = async (userId: string) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
@@ -214,9 +259,18 @@ const Users: React.FC = () => {
             .eq('manager_id', userId);
         }
 
-        // Delete the user from auth (which should cascade to profiles)
+        // Delete the user from auth
         const { error } = await supabase.auth.admin.deleteUser(userId);
-        if (error) throw error;
+        
+        if (error) {
+          // Fallback to just deleting the profile if we don't have admin rights
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', userId);
+            
+          if (profileError) throw profileError;
+        }
         
         toast.success('User deleted successfully');
         fetchUsers();
@@ -225,6 +279,16 @@ const Users: React.FC = () => {
         toast.error(error.message || 'Failed to delete user');
       }
     }
+  };
+
+  const handleEditClick = (user: UserProfile) => {
+    setSelectedUser(user);
+    editForm.reset({
+      name: user.name || '',
+      role: user.role,
+      shop_id: user.shop_id || ''
+    });
+    setIsEditDialogOpen(true);
   };
 
   // Filter users based on search term
@@ -281,7 +345,7 @@ const Users: React.FC = () => {
               Create, edit and manage user accounts
             </CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button className="w-full md:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
@@ -295,10 +359,10 @@ const Users: React.FC = () => {
                   Add a new manager to your business.
                 </DialogDescription>
               </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleCreateUser)} className="space-y-4">
+              <Form {...createForm}>
+                <form onSubmit={createForm.handleSubmit(handleCreateUser)} className="space-y-4">
                   <FormField
-                    control={form.control}
+                    control={createForm.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
@@ -311,7 +375,7 @@ const Users: React.FC = () => {
                     )}
                   />
                   <FormField
-                    control={form.control}
+                    control={createForm.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
@@ -324,7 +388,7 @@ const Users: React.FC = () => {
                     )}
                   />
                   <FormField
-                    control={form.control}
+                    control={createForm.control}
                     name="password"
                     render={({ field }) => (
                       <FormItem>
@@ -352,7 +416,7 @@ const Users: React.FC = () => {
                     )}
                   />
                   <FormField
-                    control={form.control}
+                    control={createForm.control}
                     name="shop_id"
                     render={({ field }) => (
                       <FormItem>
@@ -374,6 +438,61 @@ const Users: React.FC = () => {
                   />
                   <DialogFooter>
                     <Button type="submit" className="w-full sm:w-auto">Create Manager</Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Edit User Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit User</DialogTitle>
+                <DialogDescription>
+                  Update user details and shop assignment.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...editForm}>
+                <form onSubmit={editForm.handleSubmit(handleEditUser)} className="space-y-4">
+                  <FormField
+                    control={editForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter full name" {...field} required />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {selectedUser?.role === 'manager' && (
+                    <FormField
+                      control={editForm.control}
+                      name="shop_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assign Shop</FormLabel>
+                          <select
+                            {...field}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <option value="">No shop assigned</option>
+                            {shops.map((shop) => (
+                              <option key={shop.id} value={shop.id}>
+                                {shop.name}
+                              </option>
+                            ))}
+                          </select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                  <DialogFooter>
+                    <Button type="submit" className="w-full sm:w-auto">Save Changes</Button>
                   </DialogFooter>
                 </form>
               </Form>
@@ -433,17 +552,29 @@ const Users: React.FC = () => {
                   </CardContent>
                   <CardFooter className="border-t bg-muted/50 pt-3">
                     <div className="flex justify-between w-full">
+                      {user.role === 'manager' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditClick(user)}
+                        >
+                          <Edit className="mr-1 h-3 w-3" />
+                          Edit
+                        </Button>
+                      )}
+                      
                       {user.role !== 'owner' && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-destructive"
+                          className="text-destructive ml-auto"
                           onClick={() => handleDeleteUser(user.id)}
                         >
                           <Trash2 className="mr-1 h-3 w-3" />
                           Delete
                         </Button>
                       )}
+                      
                       {user.role === 'owner' && (
                         <div className="w-full text-center text-xs text-muted-foreground italic">
                           System administrator account

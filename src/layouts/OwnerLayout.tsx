@@ -5,8 +5,18 @@ import OwnerSidebar from "@/components/dashboards/owner/OwnerSidebar";
 import { withAuth } from "@/contexts/AuthContext";
 
 const OwnerLayout: React.FC = () => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   return (
-    <MainLayout sidebarContent={<OwnerSidebar />} />
+    <MainLayout 
+      sidebarContent={<OwnerSidebar collapsed={sidebarCollapsed} />} 
+      sidebarCollapsed={sidebarCollapsed}
+      toggleSidebar={toggleSidebar}
+    />
   );
 };
 

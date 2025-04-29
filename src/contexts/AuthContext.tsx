@@ -33,10 +33,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -63,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Check for existing session
+    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -101,26 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        // Check if error is due to email not being confirmed
-        if (error.message.includes("Email not confirmed")) {
-          toast.error("Email not confirmed. For test accounts, please check your configuration.");
-          
-          // For demo purposes, try to manually confirm the email if it's a test account
-          if (email === "admin@admin") {
-            try {
-              // Try to update email confirmation status manually for test accounts
-              await supabase.auth.admin.updateUserById(
-                data?.user?.id || "", 
-                { email_confirm: true }
-              );
-              toast.info("Attempting to confirm email for test account. Please try logging in again.");
-            } catch (adminError) {
-              console.error("Could not confirm email:", adminError);
-            }
-          }
-        } else {
-          toast.error(error.message || "Login failed");
-        }
+        toast.error(error.message || "Login failed");
         throw error;
       }
 
@@ -163,11 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        throw error;
-      }
+      await supabase.auth.signOut();
       
       // Clear state
       setUser(null);

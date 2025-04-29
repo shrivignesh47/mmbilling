@@ -1,47 +1,152 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Building2, CreditCard, DollarSign, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/dashboards/DashboardCards";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface ShopSummary {
+  name: string;
+  revenue: number;
+  trend: number;
+}
 
 const OwnerDashboard: React.FC = () => {
+  const { profile } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [totalShops, setTotalShops] = useState(0);
+  const [activeShops, setActiveShops] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [managerCount, setManagerCount] = useState(0);
+  const [cashierCount, setCashierCount] = useState(0);
+  const [recentActivity, setRecentActivity] = useState<{action: string, description: string, date: string}[]>([]);
+  const [topShops, setTopShops] = useState<ShopSummary[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // Get shop stats
+        const { data: shops, error: shopsError } = await supabase
+          .from('shops')
+          .select('*');
+        
+        if (shopsError) throw shopsError;
+        
+        setTotalShops(shops?.length || 0);
+        setActiveShops(shops?.filter(shop => shop.is_active)?.length || 0);
+        
+        // Get user stats
+        const { data: users, error: usersError } = await supabase
+          .from('profiles')
+          .select('role');
+        
+        if (usersError) throw usersError;
+        
+        setTotalUsers(users?.length || 0);
+        setManagerCount(users?.filter(user => user.role === 'manager')?.length || 0);
+        setCashierCount(users?.filter(user => user.role === 'cashier')?.length || 0);
+
+        // Create some sample data for shops (in a real app, this would come from your database)
+        setTopShops([
+          { name: "Main Branch", revenue: 12500, trend: 18 },
+          { name: "Downtown Location", revenue: 10200, trend: 12 },
+          { name: "West Side Store", revenue: 8750, trend: 5 },
+          { name: "East End Shop", revenue: 7300, trend: -2 },
+        ]);
+
+        // Set recent activity
+        const now = new Date();
+        setRecentActivity([
+          {
+            action: "User created",
+            description: "New manager account created",
+            date: "Today"
+          },
+          {
+            action: "Shop updated", 
+            description: "Shop status changed to active",
+            date: "Yesterday"
+          },
+          {
+            action: "Settings changed",
+            description: "System preferences updated",
+            date: "Apr 28, 2025"
+          }
+        ]);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Owner Dashboard</h2>
         <p className="text-muted-foreground">
-          Overview of your billing system and all shops.
+          Welcome back, {profile?.name || "Owner"}! Here's your system overview.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Revenue"
-          value="$45,231.89"
-          icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-          description="Monthly revenue"
-          trend={{ value: 12, isPositive: true }}
-        />
-        <StatCard
-          title="Total Shops"
-          value="12"
-          icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
-          description="Across 4 locations"
-          trend={{ value: 5, isPositive: true }}
-        />
-        <StatCard
-          title="Active Subscriptions"
-          value="10"
-          icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
-          description="2 pending renewal"
-        />
-        <StatCard
-          title="Total Users"
-          value="48"
-          icon={<Users className="h-4 w-4 text-muted-foreground" />}
-          description="8 managers, 40 cashiers"
-        />
-      </div>
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="pb-2">
+                <div className="h-4 w-1/2 bg-muted rounded"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-1/4 bg-muted rounded mb-2"></div>
+                <div className="h-4 w-2/3 bg-muted rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Shops"
+            value={totalShops.toString()}
+            icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
+            description={`${activeShops} active shops`}
+            trend={activeShops > 0 ? { value: Math.round((activeShops / totalShops) * 100), isPositive: true } : undefined}
+          />
+          <StatCard
+            title="Total Revenue"
+            value="$38,731.89"
+            icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+            description="Monthly revenue"
+            trend={{ value: 8, isPositive: true }}
+          />
+          <StatCard
+            title="Active Subscriptions"
+            value={activeShops.toString()}
+            icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
+            description="Shop subscriptions"
+          />
+          <StatCard
+            title="Total Users"
+            value={totalUsers.toString()}
+            icon={<Users className="h-4 w-4 text-muted-foreground" />}
+            description={`${managerCount} managers, ${cashierCount} cashiers`}
+          />
+        </div>
+      )}
+
+      {!loading && totalShops === 0 && (
+        <Alert>
+          <AlertDescription>
+            No shops found in the system. Start by adding a shop in the Shops section.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -53,22 +158,16 @@ const OwnerDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="border-b pb-2">
-                <p className="text-sm font-medium">New shop added: Downtown Branch</p>
-                <p className="text-xs text-muted-foreground">2 hours ago by Admin</p>
-              </div>
-              <div className="border-b pb-2">
-                <p className="text-sm font-medium">Subscription renewed: Main Street Shop</p>
-                <p className="text-xs text-muted-foreground">Yesterday at 4:30 PM</p>
-              </div>
-              <div className="border-b pb-2">
-                <p className="text-sm font-medium">New manager assigned: Jane Smith</p>
-                <p className="text-xs text-muted-foreground">Apr 25, 2023</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium">Invoice generated: $1,240.00</p>
-                <p className="text-xs text-muted-foreground">Apr 24, 2023</p>
-              </div>
+              {recentActivity.length > 0 ? (
+                recentActivity.map((item, i) => (
+                  <div key={i} className="border-b pb-2 last:border-0">
+                    <p className="text-sm font-medium">{item.action}: {item.description}</p>
+                    <p className="text-xs text-muted-foreground">{item.date}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No recent activity to display</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -82,34 +181,23 @@ const OwnerDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-2">
-                <div>
-                  <p className="text-sm font-medium">Main Street Shop</p>
-                  <p className="text-xs text-muted-foreground">$12,500.00</p>
+              {topShops.map((shop, i) => (
+                <div key={i} className="flex items-center justify-between border-b pb-2 last:border-0">
+                  <div>
+                    <p className="text-sm font-medium">{shop.name}</p>
+                    <p className="text-xs text-muted-foreground">${shop.revenue.toLocaleString()}</p>
+                  </div>
+                  <span className={`text-xs font-medium ${
+                    shop.trend >= 0 ? "text-success" : "text-destructive"
+                  }`}>
+                    {shop.trend >= 0 ? "+" : ""}{shop.trend}%
+                  </span>
                 </div>
-                <span className="text-xs font-medium text-success">+18%</span>
-              </div>
-              <div className="flex items-center justify-between border-b pb-2">
-                <div>
-                  <p className="text-sm font-medium">Downtown Branch</p>
-                  <p className="text-xs text-muted-foreground">$10,200.00</p>
-                </div>
-                <span className="text-xs font-medium text-success">+12%</span>
-              </div>
-              <div className="flex items-center justify-between border-b pb-2">
-                <div>
-                  <p className="text-sm font-medium">Westside Location</p>
-                  <p className="text-xs text-muted-foreground">$8,750.00</p>
-                </div>
-                <span className="text-xs font-medium text-success">+5%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">North Plaza</p>
-                  <p className="text-xs text-muted-foreground">$7,300.00</p>
-                </div>
-                <span className="text-xs font-medium text-destructive">-2%</span>
-              </div>
+              ))}
+              
+              {topShops.length === 0 && (
+                <p className="text-sm text-muted-foreground">No shop data available</p>
+              )}
             </div>
           </CardContent>
         </Card>
