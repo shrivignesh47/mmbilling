@@ -9,6 +9,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      products: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          name: string
+          price: number
+          sales_count: number | null
+          shop_id: string
+          sku: string | null
+          stock: number
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          price?: number
+          sales_count?: number | null
+          shop_id: string
+          sku?: string | null
+          stock?: number
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          price?: number
+          sales_count?: number | null
+          shop_id?: string
+          sku?: string | null
+          stock?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -74,6 +121,54 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          cashier_id: string | null
+          created_at: string | null
+          id: string
+          items: Json
+          payment_method: string
+          shop_id: string
+          transaction_id: string
+        }
+        Insert: {
+          amount: number
+          cashier_id?: string | null
+          created_at?: string | null
+          id?: string
+          items: Json
+          payment_method: string
+          shop_id: string
+          transaction_id: string
+        }
+        Update: {
+          amount?: number
+          cashier_id?: string | null
+          created_at?: string | null
+          id?: string
+          items?: Json
+          payment_method?: string
+          shop_id?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_cashier_id_fkey"
+            columns: ["cashier_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -82,6 +177,14 @@ export type Database = {
       check_user_role: {
         Args: { requested_role: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
+      }
+      decrement_stock: {
+        Args: { p_id: string; amount: number }
+        Returns: number
+      }
+      increment_sales: {
+        Args: { p_id: string; amount: number }
+        Returns: number
       }
     }
     Enums: {

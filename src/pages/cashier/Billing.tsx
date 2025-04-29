@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Package, 
@@ -74,8 +73,8 @@ const Billing = () => {
       const filtered = products.filter(
         product => 
           product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+          (product.category && product.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       setFilteredProducts(filtered);
     } else {
@@ -87,16 +86,30 @@ const Billing = () => {
     if (!profile?.shop_id) return;
 
     try {
+      // Here's where the error was - using the PostgrestQueryBuilder with "products" 
       const { data, error } = await supabase
-        .from('products')
+        .from("products")
         .select('*')
         .eq('shop_id', profile.shop_id)
         .gt('stock', 0)
         .order('name');
       
       if (error) throw error;
-      setProducts(data || []);
-      setFilteredProducts(data || []);
+      
+      // Type safety for the returned data
+      if (data) {
+        const typedProducts: Product[] = data.map(product => ({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          stock: product.stock,
+          category: product.category || '',
+          sku: product.sku || ''
+        }));
+        
+        setProducts(typedProducts);
+        setFilteredProducts(typedProducts);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Failed to load products');
@@ -107,15 +120,29 @@ const Billing = () => {
     if (!profile?.shop_id) return;
 
     try {
+      // Here's where another error was - using the PostgrestQueryBuilder with "transactions"
       const { data, error } = await supabase
-        .from('transactions')
+        .from("transactions")
         .select('*')
         .eq('shop_id', profile.shop_id)
         .order('created_at', { ascending: false })
         .limit(10);
       
       if (error) throw error;
-      setRecentTransactions(data || []);
+      
+      if (data) {
+        // Type safety for the returned data
+        const typedTransactions: Transaction[] = data.map(transaction => ({
+          id: transaction.id,
+          transaction_id: transaction.transaction_id,
+          created_at: transaction.created_at,
+          amount: transaction.amount,
+          items: transaction.items as BillItem[],
+          payment_method: transaction.payment_method
+        }));
+        
+        setRecentTransactions(typedTransactions);
+      }
     } catch (error) {
       console.error('Error fetching transactions:', error);
     }
@@ -223,8 +250,9 @@ const Billing = () => {
         payment_method: paymentMethod
       };
 
+      // Here's where another error was - using insert with transaction data
       const { data: transactionResult, error: transactionError } = await supabase
-        .from('transactions')
+        .from("transactions")
         .insert([transactionData])
         .select()
         .single();
@@ -233,8 +261,9 @@ const Billing = () => {
 
       // Update product stock and sales count
       for (const item of billItems) {
+        // Here's where another error was - using update with products
         const { error: stockError } = await supabase
-          .from('products')
+          .from("products")
           .update({ 
             stock: supabase.rpc('decrement_stock', { 
               p_id: item.productId, 
