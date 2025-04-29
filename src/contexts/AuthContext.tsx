@@ -19,7 +19,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
   isAuthenticated: boolean;
 }
 
@@ -33,9 +33,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener first
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -62,10 +63,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Then check for existing session
+    // Check for existing session without automatic redirection
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
+      
       if (session?.user) {
         supabase
           .from('profiles')
@@ -81,8 +88,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             setLoading(false);
           });
-      } else {
-        setLoading(false);
       }
     });
 
@@ -128,6 +133,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             case "cashier":
               navigate("/cashier/dashboard");
               break;
+            default:
+              console.error("Unknown role:", profile.role);
+              toast.error("Unknown role. Please contact support.");
           }
         }
       }
@@ -140,26 +148,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = async () => {
-    try {
-      setLoading(true);
-      await supabase.auth.signOut();
-      
-      // Clear state
-      setUser(null);
-      setProfile(null);
-      setSession(null);
-      
-      // Redirect to login
-      navigate("/login");
-      toast.success("Logged out successfully");
-    } catch (error: any) {
-      console.error("Logout error:", error);
-      toast.error("Failed to log out: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  async function logout() {
+      try {
+          // Clear storage first to prevent auto-reauth
+          Object.keys(sessionStorage).forEach(key => {
+              sessionStorage.removeItem(key);
+          });
+  
+          // Clear localStorage if used
+          Object.keys(localStorage).forEach(key => {
+              localStorage.removeItem(key);
+          });
+  
+          // Sign out from Supabase
+          const { error } = await supabase.auth.signOut();
+          if (error) throw error;
+  
+          // Clear all auth states
+          setUser(null);
+          setProfile(null);
+          setSession(null);
+  
+          // Ensure navigation to login page after successful logout
+          console.log("Navigating to login page");
+          navigate("/login");
+          toast.success("Logged out successfully");
+      } catch (error) {
+          console.error("Logout error:", error);
+          toast.error("Failed to logout. Please try again.");
+      }
+  }
 
   const value = {
     user,
