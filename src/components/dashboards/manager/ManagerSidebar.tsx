@@ -53,7 +53,7 @@ interface ManagerSidebarProps {
 }
 
 const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed = false }) => {
-  const { logout } = useAuth();
+  const { logout, profile } = useAuth();
   
   const handleLogout = async () => {
     await logout();
@@ -64,6 +64,11 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed = false }) =>
       {!collapsed && (
         <div className="px-3 py-2">
           <h2 className="mb-2 px-1 text-lg font-semibold">Manager Dashboard</h2>
+          {profile?.shop_id && (
+            <p className="text-xs text-muted-foreground px-1 truncate">
+              {profile.shop_name || 'Loading shop...'}
+            </p>
+          )}
         </div>
       )}
       
@@ -71,11 +76,11 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed = false }) =>
         <SidebarItem to="/manager/dashboard" icon={BarChart3} end collapsed={collapsed}>
           Dashboard
         </SidebarItem>
-        <SidebarItem to="/manager/inventory" icon={Package} collapsed={collapsed}>
-          Inventory
-        </SidebarItem>
         <SidebarItem to="/manager/products" icon={ShoppingBag} collapsed={collapsed}>
           Products
+        </SidebarItem>
+        <SidebarItem to="/manager/inventory" icon={Package} collapsed={collapsed}>
+          Inventory
         </SidebarItem>
         <SidebarItem to="/manager/cashiers" icon={Users} collapsed={collapsed}>
           Cashiers

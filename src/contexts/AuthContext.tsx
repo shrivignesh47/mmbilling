@@ -12,6 +12,7 @@ interface Profile {
   name: string;
   role: UserRole;
   shop_id?: string;
+  shop_name?: string;  // Added to store shop name for easier access
 }
 
 interface AuthContextType {
@@ -19,7 +20,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -51,6 +52,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .single();
               
               if (error) throw error;
+              
+              // If profile has shop_id, fetch the shop name
+              if (profileData && profileData.shop_id) {
+                const { data: shopData, error: shopError } = await supabase
+                  .from('shops')
+                  .select('name')
+                  .eq('id', profileData.shop_id)
+                  .single();
+                
+                if (!shopError && shopData) {
+                  setProfile({
+                    ...profileData,
+                    shop_name: shopData.name
+                  });
+                  return;
+                }
+              }
+              
               setProfile(profileData);
             } catch (error) {
               console.error("Error fetching profile:", error);
@@ -79,15 +98,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .select('*')
           .eq('id', session.user.id)
           .single()
-          .then(({ data: profile, error }) => {
+          .then(async ({ data: profileData, error }) => {
             if (error) {
               console.error("Error fetching profile:", error);
               setProfile(null);
-            } else {
-              setProfile(profile);
+              setLoading(false);
+              return;
             }
+            
+            // If profile has shop_id, fetch the shop name
+            if (profileData && profileData.shop_id) {
+              try {
+                const { data: shopData, error: shopError } = await supabase
+                  .from('shops')
+                  .select('name')
+                  .eq('id', profileData.shop_id)
+                  .single();
+                
+                if (!shopError && shopData) {
+                  setProfile({
+                    ...profileData,
+                    shop_name: shopData.name
+                  });
+                  setLoading(false);
+                  return;
+                }
+              } catch (shopError) {
+                console.error("Error fetching shop:", shopError);
+              }
+            }
+            
+            setProfile(profileData);
             setLoading(false);
           });
+      } else {
+        setLoading(false);
       }
     });
 
@@ -150,32 +195,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   async function logout() {
       try {
-          // Clear storage first to prevent auto-reauth
-          Object.keys(sessionStorage).forEach(key => {
-              sessionStorage.removeItem(key);
-          });
-  
-          // Clear localStorage if used
-          Object.keys(localStorage).forEach(key => {
-              localStorage.removeItem(key);
-          });
-  
+          setLoading(true);
+          
           // Sign out from Supabase
           const { error } = await supabase.auth.signOut();
           if (error) throw error;
-  
+          
           // Clear all auth states
           setUser(null);
           setProfile(null);
           setSession(null);
-  
+          
+          // Force clear all relevant storage
+          localStorage.removeItem('supabase.auth.token');
+          sessionStorage.removeItem('supabase.auth.token');
+          
+          // Additional cleanup for any other storage items
+          Object.keys(localStorage)
+            .filter(key => key.startsWith('supabase.'))
+            .forEach(key => localStorage.removeItem(key));
+            
+          Object.keys(sessionStorage)
+            .filter(key => key.startsWith('supabase.'))
+            .forEach(key => sessionStorage.removeItem(key));
+            
           // Ensure navigation to login page after successful logout
           console.log("Navigating to login page");
-          navigate("/login");
+          navigate("/login", { replace: true });
           toast.success("Logged out successfully");
       } catch (error) {
           console.error("Logout error:", error);
           toast.error("Failed to logout. Please try again.");
+      } finally {
+          setLoading(false);
       }
   }
 

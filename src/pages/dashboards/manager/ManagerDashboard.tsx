@@ -1,10 +1,143 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { DollarSign, PackageCheck, PackageX, ShoppingBag } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/dashboards/DashboardCards";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  stock: number;
+  sku: string;
+  shop_id: string;
+  sales_count: number;
+}
 
 const ManagerDashboard: React.FC = () => {
+  const { profile } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [todaySales, setTodaySales] = useState(0);
+  const [transactionCount, setTransactionCount] = useState(0);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [inStockCount, setInStockCount] = useState(0);
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const [topProducts, setTopProducts] = useState<Product[]>([]);
+  const [inventoryAlerts, setInventoryAlerts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!profile?.shop_id) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // Fetch products for this shop
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('shop_id', profile.shop_id);
+        
+        if (productsError) throw productsError;
+        
+        // Calculate product statistics
+        const totalProductsCount = products?.length || 0;
+        const inStock = products?.filter(p => p.stock > 5)?.length || 0;
+        const lowStock = products?.filter(p => p.stock > 0 && p.stock <= 5)?.length || 0;
+        
+        setTotalProducts(totalProductsCount);
+        setInStockCount(inStock);
+        setLowStockCount(lowStock);
+        
+        // Get today's transactions
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const { data: transactions, error: transactionsError } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('shop_id', profile.shop_id)
+          .gte('created_at', today.toISOString());
+        
+        if (transactionsError) throw transactionsError;
+        
+        // Calculate sales data
+        const salesTotal = transactions?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0;
+        setTodaySales(salesTotal);
+        setTransactionCount(transactions?.length || 0);
+        
+        // Get top selling products
+        const { data: topSellingProducts, error: topProductsError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('shop_id', profile.shop_id)
+          .order('sales_count', { ascending: false })
+          .limit(4);
+          
+        if (topProductsError) throw topProductsError;
+        setTopProducts(topSellingProducts || []);
+        
+        // Get inventory alerts
+        const alerts = [];
+        
+        // Out of stock items
+        const outOfStock = products?.filter(p => p.stock === 0) || [];
+        for (const product of outOfStock.slice(0, 2)) {
+          alerts.push({
+            type: 'out_of_stock',
+            name: product.name,
+            message: 'Out of stock',
+            time: 'Action required'
+          });
+        }
+        
+        // Low stock items
+        const lowStockItems = products?.filter(p => p.stock > 0 && p.stock <= 5) || [];
+        for (const product of lowStockItems.slice(0, 2)) {
+          alerts.push({
+            type: 'low_stock',
+            name: product.name,
+            message: `Only ${product.stock} units remaining`,
+            time: 'Order soon'
+          });
+        }
+        
+        // Recently restocked
+        const { data: recentlyRestocked, error: restockedError } = await supabase
+          .from('inventory_logs')
+          .select('*')
+          .eq('shop_id', profile.shop_id)
+          .eq('action', 'restock')
+          .order('created_at', { ascending: false })
+          .limit(1);
+          
+        if (!restockedError && recentlyRestocked && recentlyRestocked.length > 0) {
+          alerts.push({
+            type: 'restock',
+            name: recentlyRestocked[0].product_name,
+            message: `${recentlyRestocked[0].quantity} units added`,
+            time: new Date(recentlyRestocked[0].created_at).toLocaleDateString()
+          });
+        }
+        
+        setInventoryAlerts(alerts);
+        
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [profile?.shop_id]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -14,103 +147,109 @@ const ManagerDashboard: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Today's Sales"
-          value="$1,250.00"
-          icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-          description="32 transactions"
-          trend={{ value: 8, isPositive: true }}
-        />
-        <StatCard
-          title="Total Products"
-          value="245"
-          icon={<ShoppingBag className="h-4 w-4 text-muted-foreground" />}
-          description="12 categories"
-        />
-        <StatCard
-          title="In Stock"
-          value="198"
-          icon={<PackageCheck className="h-4 w-4 text-muted-foreground" />}
-          description="80% of inventory"
-          trend={{ value: 2, isPositive: true }}
-        />
-        <StatCard
-          title="Low Stock"
-          value="47"
-          icon={<PackageX className="h-4 w-4 text-muted-foreground" />}
-          description="Below threshold"
-          trend={{ value: 5, isPositive: false }}
-        />
-      </div>
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="pb-2">
+                <div className="h-4 w-1/2 bg-muted rounded"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-1/4 bg-muted rounded mb-2"></div>
+                <div className="h-4 w-2/3 bg-muted rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Today's Sales"
+            value={`$${todaySales.toFixed(2)}`}
+            icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+            description={`${transactionCount} transactions`}
+          />
+          <StatCard
+            title="Total Products"
+            value={totalProducts.toString()}
+            icon={<ShoppingBag className="h-4 w-4 text-muted-foreground" />}
+            description="In inventory"
+          />
+          <StatCard
+            title="In Stock"
+            value={inStockCount.toString()}
+            icon={<PackageCheck className="h-4 w-4 text-muted-foreground" />}
+            description="Products with healthy stock"
+          />
+          <StatCard
+            title="Low Stock"
+            value={lowStockCount.toString()}
+            icon={<PackageX className="h-4 w-4 text-muted-foreground" />}
+            description="Products needing restock"
+          />
+        </div>
+      )}
+
+      {!loading && !profile?.shop_id && (
+        <Alert>
+          <AlertDescription>
+            You haven't been assigned to a shop yet. Please contact the owner to assign you to a shop.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Today's Top Selling Products</CardTitle>
+            <CardTitle>Top Selling Products</CardTitle>
             <CardDescription>
               Based on sales volume
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-2">
-                <div>
-                  <p className="text-sm font-medium">Wireless Headphones</p>
-                  <p className="text-xs text-muted-foreground">Electronics</p>
-                </div>
-                <span className="text-sm font-medium">28 units</span>
-              </div>
-              <div className="flex items-center justify-between border-b pb-2">
-                <div>
-                  <p className="text-sm font-medium">Premium T-Shirt</p>
-                  <p className="text-xs text-muted-foreground">Apparel</p>
-                </div>
-                <span className="text-sm font-medium">22 units</span>
-              </div>
-              <div className="flex items-center justify-between border-b pb-2">
-                <div>
-                  <p className="text-sm font-medium">Smart Watch</p>
-                  <p className="text-xs text-muted-foreground">Electronics</p>
-                </div>
-                <span className="text-sm font-medium">15 units</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Water Bottle</p>
-                  <p className="text-xs text-muted-foreground">Accessories</p>
-                </div>
-                <span className="text-sm font-medium">14 units</span>
-              </div>
+              {topProducts.length > 0 ? (
+                topProducts.map((product, i) => (
+                  <div key={product.id} className="flex items-center justify-between border-b pb-2 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">{product.category}</p>
+                    </div>
+                    <span className="text-sm font-medium">{product.sales_count || 0} units</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No sales data available</p>
+              )}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent Inventory Alerts</CardTitle>
+            <CardTitle>Inventory Alerts</CardTitle>
             <CardDescription>
               Products that need attention
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="border-b pb-2">
-                <p className="text-sm font-medium text-destructive">Out of stock: Premium Leather Wallet</p>
-                <p className="text-xs text-muted-foreground">Last sold 3 hours ago</p>
-              </div>
-              <div className="border-b pb-2">
-                <p className="text-sm font-medium text-amber-500">Low stock: Bluetooth Speaker</p>
-                <p className="text-xs text-muted-foreground">Only 5 units remaining</p>
-              </div>
-              <div className="border-b pb-2">
-                <p className="text-sm font-medium text-amber-500">Low stock: Designer Sunglasses</p>
-                <p className="text-xs text-muted-foreground">Only 3 units remaining</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-success">Restocked: Laptop Sleeve</p>
-                <p className="text-xs text-muted-foreground">30 units added yesterday</p>
-              </div>
+              {inventoryAlerts.length > 0 ? (
+                inventoryAlerts.map((alert, i) => (
+                  <div key={i} className="border-b pb-2 last:border-0">
+                    <p className={`text-sm font-medium ${
+                      alert.type === 'out_of_stock' ? 'text-destructive' : 
+                      alert.type === 'low_stock' ? 'text-amber-500' : 
+                      'text-success'
+                    }`}>
+                      {alert.message}: {alert.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{alert.time}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No inventory alerts at this time</p>
+              )}
             </div>
           </CardContent>
         </Card>

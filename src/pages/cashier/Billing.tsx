@@ -1,292 +1,660 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
-  CreditCard, 
-  DollarSign, 
-  Inbox, 
-  Minus, 
+  Package, 
   Plus, 
-  ReceiptText, 
-  Save, 
-  Search, 
-  ShoppingCart, 
-  Trash2
+  Trash2, 
+  CreditCard, 
+  Receipt, 
+  Search,
+  Download,
+  Check,
+  X
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-interface ProductItem {
+interface Product {
   id: string;
+  name: string;
+  price: number;
+  stock: number;
+  category: string;
+  sku: string;
+}
+
+interface BillItem {
+  productId: string;
   name: string;
   price: number;
   quantity: number;
 }
 
-const demoProducts = [
-  { id: "p1", name: "Wireless Headphones", price: 59.99 },
-  { id: "p2", name: "Smart Watch", price: 129.99 },
-  { id: "p3", name: "Bluetooth Speaker", price: 45.00 },
-  { id: "p4", name: "Phone Case", price: 19.99 },
-  { id: "p5", name: "USB-C Cable", price: 12.99 },
-  { id: "p6", name: "Power Bank", price: 35.00 },
-];
+interface Transaction {
+  id: string;
+  transaction_id: string;
+  created_at: string;
+  amount: number;
+  items: BillItem[];
+  payment_method: string;
+}
 
-const Billing: React.FC = () => {
-  const [cartItems, setCartItems] = useState<ProductItem[]>([]);
+const Billing = () => {
+  const { profile } = useAuth();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<typeof demoProducts>([]);
-  
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const term = e.target.value;
-    setSearchTerm(term);
-    
-    if (term.length > 0) {
-      const results = demoProducts.filter(product => 
-        product.name.toLowerCase().includes(term.toLowerCase())
+  const [billItems, setBillItems] = useState<BillItem[]>([]);
+  const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [receiptData, setReceiptData] = useState<Transaction | null>(null);
+  const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (profile?.shop_id) {
+      fetchProducts();
+      fetchRecentTransactions();
+    }
+  }, [profile?.shop_id]);
+
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = products.filter(
+        product => 
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.sku.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setSearchResults(results);
+      setFilteredProducts(filtered);
     } else {
-      setSearchResults([]);
+      setFilteredProducts(products);
+    }
+  }, [products, searchTerm]);
+
+  const fetchProducts = async () => {
+    if (!profile?.shop_id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('shop_id', profile.shop_id)
+        .gt('stock', 0)
+        .order('name');
+      
+      if (error) throw error;
+      setProducts(data || []);
+      setFilteredProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast.error('Failed to load products');
     }
   };
-  
-  const addToCart = (product: typeof demoProducts[0]) => {
-    const existingItem = cartItems.find(item => item.id === product.id);
-    
-    if (existingItem) {
-      setCartItems(cartItems.map(item => 
-        item.id === product.id 
-          ? { ...item, quantity: item.quantity + 1 } 
-          : item
-      ));
-    } else {
-      setCartItems([...cartItems, { ...product, quantity: 1 }]);
+
+  const fetchRecentTransactions = async () => {
+    if (!profile?.shop_id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('shop_id', profile.shop_id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      setRecentTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
     }
+  };
+
+  const addToBill = (product: Product) => {
+    // Check if product has enough stock
+    if (product.stock <= 0) {
+      toast.error('This product is out of stock');
+      return;
+    }
+
+    // Check if product is already in bill
+    const existingItemIndex = billItems.findIndex(item => item.productId === product.id);
     
-    setSearchTerm("");
-    setSearchResults([]);
+    if (existingItemIndex >= 0) {
+      // Check if we have enough stock for additional item
+      const currentQuantity = billItems[existingItemIndex].quantity;
+      
+      if (currentQuantity >= product.stock) {
+        toast.error('Not enough stock available');
+        return;
+      }
+      
+      // Increment quantity
+      const updatedItems = [...billItems];
+      updatedItems[existingItemIndex].quantity += 1;
+      setBillItems(updatedItems);
+    } else {
+      // Add new item
+      setBillItems([
+        ...billItems,
+        {
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: 1
+        }
+      ]);
+    }
+
+    toast.success(`Added ${product.name} to bill`);
   };
-  
-  const updateQuantity = (id: string, change: number) => {
-    setCartItems(cartItems.map(item => 
-      item.id === id 
-        ? { ...item, quantity: Math.max(1, item.quantity + change) } 
-        : item
-    ));
+
+  const updateItemQuantity = (index: number, quantity: number) => {
+    if (quantity <= 0) {
+      // Remove item if quantity is 0 or less
+      removeItem(index);
+      return;
+    }
+
+    const product = products.find(p => p.id === billItems[index].productId);
+    
+    if (product && quantity > product.stock) {
+      toast.error(`Only ${product.stock} in stock`);
+      return;
+    }
+
+    const updatedItems = [...billItems];
+    updatedItems[index].quantity = quantity;
+    setBillItems(updatedItems);
   };
-  
-  const removeItem = (id: string) => {
-    setCartItems(cartItems.filter(item => item.id !== id));
+
+  const removeItem = (index: number) => {
+    setBillItems(billItems.filter((_, i) => i !== index));
   };
-  
-  const clearCart = () => {
-    setCartItems([]);
+
+  const clearBill = () => {
+    if (billItems.length === 0) return;
+    
+    if (window.confirm('Are you sure you want to clear the current bill?')) {
+      setBillItems([]);
+      toast.info('Bill cleared');
+    }
   };
-  
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.08; // 8% tax
-  const total = subtotal + tax;
+
+  const getTotalAmount = () => {
+    return billItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
+  const handleCheckout = async () => {
+    if (billItems.length === 0) {
+      toast.error('Cannot checkout an empty bill');
+      return;
+    }
+
+    if (!profile?.shop_id) {
+      toast.error('Shop ID is required');
+      return;
+    }
+
+    setIsPaymentProcessing(true);
+
+    try {
+      // Generate a transaction ID
+      const transactionId = `INV-${Date.now().toString().slice(-8)}`;
+
+      // Create the transaction record
+      const transactionData = {
+        shop_id: profile.shop_id,
+        cashier_id: profile.id,
+        transaction_id: transactionId,
+        amount: getTotalAmount(),
+        items: billItems,
+        payment_method: paymentMethod
+      };
+
+      const { data: transactionResult, error: transactionError } = await supabase
+        .from('transactions')
+        .insert([transactionData])
+        .select()
+        .single();
+
+      if (transactionError) throw transactionError;
+
+      // Update product stock and sales count
+      for (const item of billItems) {
+        const { error: stockError } = await supabase
+          .from('products')
+          .update({ 
+            stock: supabase.rpc('decrement_stock', { 
+              p_id: item.productId, 
+              amount: item.quantity 
+            }),
+            sales_count: supabase.rpc('increment_sales', {
+              p_id: item.productId,
+              amount: item.quantity
+            })
+          })
+          .eq('id', item.productId);
+
+        if (stockError) {
+          console.error(`Error updating stock for product ${item.productId}:`, stockError);
+        }
+      }
+
+      // Show success message
+      toast.success('Payment processed successfully');
+      setReceiptData(transactionResult);
+      setIsReceiptDialogOpen(true);
+      
+      // Reset the bill
+      setBillItems([]);
+      setIsCheckoutDialogOpen(false);
+      
+      // Refresh product list and transactions
+      fetchProducts();
+      fetchRecentTransactions();
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      toast.error('Payment processing failed');
+    } finally {
+      setIsPaymentProcessing(false);
+    }
+  };
+
+  const downloadReceipt = () => {
+    if (!receiptRef.current || !receiptData) return;
+
+    const receiptContent = receiptRef.current.innerHTML;
+    const blob = new Blob([`
+      <html>
+        <head>
+          <title>Receipt</title>
+          <style>
+            body { font-family: sans-serif; padding: 20px; }
+            .receipt { max-width: 400px; margin: 0 auto; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .items { margin: 20px 0; }
+            .item { display: flex; justify-content: space-between; margin-bottom: 8px; }
+            .total { font-weight: bold; border-top: 1px solid #ccc; padding-top: 10px; }
+          </style>
+        </head>
+        <body>
+          ${receiptContent}
+        </body>
+      </html>
+    `], { type: 'text/html' });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receipt-${receiptData.transaction_id}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const viewTransaction = async (transaction: Transaction) => {
+    setReceiptData(transaction);
+    setIsReceiptDialogOpen(true);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Billing</h2>
         <p className="text-muted-foreground">
-          Create a new bill for a customer
+          Create and manage customer bills
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Product Search and Cart Section */}
+      {!profile?.shop_id && (
+        <Alert>
+          <AlertDescription>
+            You haven't been assigned to a shop yet. Please contact the manager to assign you to a shop.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Product Selection */}
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="space-y-4">
             <CardTitle>Products</CardTitle>
-            <CardDescription>
-              Search for products to add to the bill
-            </CardDescription>
-            <div className="relative mt-2">
+            <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search for products..."
+                placeholder="Search products..."
                 className="pl-8"
                 value={searchTerm}
-                onChange={handleSearch}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
-              {searchResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg">
-                  {searchResults.map(product => (
-                    <div 
-                      key={product.id}
-                      className="flex justify-between items-center p-2 hover:bg-secondary cursor-pointer"
-                      onClick={() => addToCart(product)}
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">${product.price.toFixed(2)}</p>
-                      </div>
-                      <Button size="sm" variant="ghost">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </CardHeader>
-          
-          <CardContent>
-            <div className="rounded-md border">
-              <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="flex items-center font-semibold text-sm">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Shopping Cart
-                  </h3>
-                  {cartItems.length > 0 && (
-                    <Button variant="outline" size="sm" onClick={clearCart}>
-                      <Trash2 className="mr-1 h-3 w-3" />
-                      Clear
-                    </Button>
-                  )}
+          <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 max-h-[400px] overflow-y-auto p-6">
+            {filteredProducts.map(product => (
+              <Card key={product.id} className="overflow-hidden">
+                <div className="p-4">
+                  <h3 className="text-sm font-medium">{product.name}</h3>
+                  <p className="text-xs text-muted-foreground">{product.category}</p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="font-bold">${product.price.toFixed(2)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Stock: {product.stock}
+                    </span>
+                  </div>
                 </div>
-                
-                {cartItems.length === 0 ? (
-                  <div className="mt-8 mb-8 flex flex-col items-center justify-center text-center">
-                    <Inbox className="h-10 w-10 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-semibold">Your cart is empty</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Search for products to add them to the cart
-                    </p>
-                  </div>
-                ) : (
-                  <div className="mt-4 space-y-4">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            ${item.price.toFixed(2)} × {item.quantity}
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="flex items-center space-x-1">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => updateQuantity(item.id, -1)}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-5 text-center text-sm">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => updateQuantity(item.id, 1)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive"
-                            onClick={() => removeItem(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <CardFooter className="border-t bg-muted/50 p-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => addToBill(product)}
+                    className="w-full"
+                    disabled={product.stock <= 0}
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Add to Bill
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+            {filteredProducts.length === 0 && (
+              <div className="col-span-full flex flex-col items-center justify-center py-8">
+                <Package className="h-12 w-12 text-muted-foreground mb-2" />
+                <h3 className="text-lg font-medium mb-1">No products found</h3>
+                <p className="text-sm text-center text-muted-foreground">
+                  {products.length === 0 
+                    ? "No products are available in the inventory." 
+                    : "Try adjusting your search terms."}
+                </p>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Bill Summary Section */}
+        {/* Current Bill */}
         <Card>
-          <CardHeader>
-            <CardTitle>Bill Summary</CardTitle>
-            <CardDescription>
-              Order details and payment options
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Current Bill</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={clearBill}
+              disabled={billItems.length === 0}
+              className="text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Clear
+            </Button>
           </CardHeader>
+          <CardContent className="max-h-[400px] overflow-y-auto">
+            {billItems.length > 0 ? (
+              <div className="space-y-3">
+                {billItems.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between pb-2 border-b">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} each</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-6 w-6" 
+                        onClick={() => updateItemQuantity(index, item.quantity - 1)}
+                      >
+                        -
+                      </Button>
+                      <span className="w-8 text-center">{item.quantity}</span>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-6 w-6"
+                        onClick={() => updateItemQuantity(index, item.quantity + 1)}
+                      >
+                        +
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 text-destructive"
+                        onClick={() => removeItem(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Receipt className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No items added yet</p>
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <div className="flex items-center justify-between w-full border-t pt-4">
+              <span className="font-semibold text-lg">Total:</span>
+              <span className="font-bold text-lg">${getTotalAmount().toFixed(2)}</span>
+            </div>
+            <Button 
+              className="w-full" 
+              size="lg"
+              disabled={billItems.length === 0}
+              onClick={() => setIsCheckoutDialogOpen(true)}
+            >
+              <CreditCard className="mr-2 h-5 w-5" />
+              Checkout
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+
+      {/* Transactions History Tab */}
+      <Tabs defaultValue="recent">
+        <TabsList>
+          <TabsTrigger value="recent">Recent Transactions</TabsTrigger>
+        </TabsList>
+        <TabsContent value="recent" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Transactions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="py-3 px-4 text-left font-medium">Transaction ID</th>
+                      <th className="py-3 px-4 text-left font-medium">Date & Time</th>
+                      <th className="py-3 px-4 text-right font-medium">Amount</th>
+                      <th className="py-3 px-4 text-center font-medium">Payment Method</th>
+                      <th className="py-3 px-4 text-center font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentTransactions.map((transaction) => (
+                      <tr key={transaction.id} className="border-b">
+                        <td className="py-3 px-4 font-mono text-xs">{transaction.transaction_id}</td>
+                        <td className="py-3 px-4">{formatDate(transaction.created_at)}</td>
+                        <td className="py-3 px-4 text-right">${transaction.amount.toFixed(2)}</td>
+                        <td className="py-3 px-4 text-center capitalize">{transaction.payment_method}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center justify-center">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => viewTransaction(transaction)}
+                            >
+                              <Receipt className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {recentTransactions.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                          No recent transactions found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Checkout Dialog */}
+      <Dialog open={isCheckoutDialogOpen} onOpenChange={setIsCheckoutDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Payment</DialogTitle>
+            <DialogDescription>
+              Select a payment method to finalize the bill.
+            </DialogDescription>
+          </DialogHeader>
           
-          <CardContent className="space-y-6">
-            {/* Order Summary */}
-            <div className="space-y-4">
-              <h3 className="font-medium">Order Summary</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax (8%)</span>
-                  <span>${tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Discount</span>
-                  <span>$0.00</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between font-medium text-base">
-                  <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
-                </div>
-              </div>
+          <div className="space-y-4 py-4">
+            <div className="flex justify-between">
+              <span>Total Amount:</span>
+              <span className="font-bold">${getTotalAmount().toFixed(2)}</span>
             </div>
-
-            {/* Customer Information */}
-            <div className="space-y-4">
-              <h3 className="font-medium">Customer Information</h3>
-              <div className="grid gap-2">
-                <Label htmlFor="customer-name">Name (Optional)</Label>
-                <Input id="customer-name" placeholder="Customer name" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="customer-phone">Phone (Optional)</Label>
-                <Input id="customer-phone" placeholder="Phone number" />
-              </div>
-            </div>
-
-            {/* Payment Options */}
-            <div className="space-y-4">
-              <h3 className="font-medium">Payment</h3>
+            
+            <div className="space-y-2">
+              <Label>Payment Method</Label>
               <div className="grid grid-cols-2 gap-4">
-                <Button className="h-20 flex-col" variant="outline">
-                  <DollarSign className="h-5 w-5 mb-1" />
+                <Button
+                  type="button"
+                  variant={paymentMethod === 'cash' ? 'default' : 'outline'}
+                  className="justify-start"
+                  onClick={() => setPaymentMethod('cash')}
+                >
+                  <Check className={`mr-2 h-4 w-4 ${paymentMethod === 'cash' ? 'opacity-100' : 'opacity-0'}`} />
                   Cash
                 </Button>
-                <Button className="h-20 flex-col" variant="outline">
-                  <CreditCard className="h-5 w-5 mb-1" />
+                <Button
+                  type="button"
+                  variant={paymentMethod === 'card' ? 'default' : 'outline'}
+                  className="justify-start"
+                  onClick={() => setPaymentMethod('card')}
+                >
+                  <Check className={`mr-2 h-4 w-4 ${paymentMethod === 'card' ? 'opacity-100' : 'opacity-0'}`} />
                   Card
                 </Button>
               </div>
             </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCheckoutDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCheckout} 
+              disabled={isPaymentProcessing}
+            >
+              {isPaymentProcessing ? 'Processing...' : 'Complete Payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" className="flex items-center">
-                <Save className="mr-2 h-4 w-4" />
-                Save
-              </Button>
-              <Button className="flex items-center">
-                <ReceiptText className="mr-2 h-4 w-4" />
-                Checkout
-              </Button>
+      {/* Receipt Dialog */}
+      <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Receipt</DialogTitle>
+            <DialogDescription>
+              Transaction details
+            </DialogDescription>
+          </DialogHeader>
+          
+          {receiptData && (
+            <div className="py-4" ref={receiptRef}>
+              <div className="text-center space-y-1 mb-4">
+                <h3 className="font-bold">Shop Receipt</h3>
+                <p className="text-sm">Transaction ID: {receiptData.transaction_id}</p>
+                <p className="text-sm">{formatDate(receiptData.created_at)}</p>
+              </div>
+              
+              <div className="border-t border-b py-4 my-4">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="py-2 text-left">Item</th>
+                      <th className="py-2 text-right">Qty</th>
+                      <th className="py-2 text-right">Price</th>
+                      <th className="py-2 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {receiptData.items && receiptData.items.map((item, idx) => (
+                      <tr key={idx} className="border-b border-dashed last:border-b-0">
+                        <td className="py-2">{item.name}</td>
+                        <td className="py-2 text-right">{item.quantity}</td>
+                        <td className="py-2 text-right">${item.price.toFixed(2)}</td>
+                        <td className="py-2 text-right">${(item.price * item.quantity).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div className="flex justify-between font-bold">
+                <span>Total</span>
+                <span>${receiptData.amount.toFixed(2)}</span>
+              </div>
+              
+              <div className="mt-2 text-sm">
+                <p>Payment Method: <span className="capitalize">{receiptData.payment_method}</span></p>
+              </div>
+              
+              <div className="mt-6 text-center text-sm text-muted-foreground">
+                <p>Thank you for your purchase!</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsReceiptDialogOpen(false)}
+            >
+              Close
+            </Button>
+            <Button 
+              onClick={downloadReceipt}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -24,10 +24,14 @@ import Settings from "@/pages/owner/Settings";
 // Manager Pages
 import ManagerDashboard from "@/pages/dashboards/manager/ManagerDashboard";
 import Inventory from "@/pages/manager/Inventory";
+import Products from "@/pages/manager/Products";
+import Cashiers from "@/pages/manager/Cashiers";
+import ManagerSettings from "@/pages/manager/Settings";
 
 // Cashier Pages
 import CashierDashboard from "@/pages/dashboards/cashier/CashierDashboard";
 import Billing from "@/pages/cashier/Billing";
+import CashierSettings from "@/pages/cashier/Settings";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +60,9 @@ const App = () => (
             <Route path="/manager" element={<ManagerLayout />}>
               <Route path="dashboard" element={<ManagerDashboard />} />
               <Route path="inventory" element={<Inventory />} />
+              <Route path="products" element={<Products />} />
+              <Route path="cashiers" element={<Cashiers />} />
+              <Route path="settings" element={<ManagerSettings />} />
               <Route index element={<Navigate to="/manager/dashboard" />} />
             </Route>
 
@@ -63,6 +70,7 @@ const App = () => (
             <Route path="/cashier" element={<CashierLayout />}>
               <Route path="dashboard" element={<CashierDashboard />} />
               <Route path="billing" element={<Billing />} />
+              <Route path="settings" element={<CashierSettings />} />
               <Route index element={<Navigate to="/cashier/dashboard" />} />
             </Route>
 
