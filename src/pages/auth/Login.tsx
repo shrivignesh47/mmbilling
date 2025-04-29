@@ -16,91 +16,42 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      // If already authenticated, redirect to appropriate dashboard
+    // Only check authentication after explicit login, not on mount
+    if (isAuthenticated && !loading) {
       const checkProfile = async () => {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', (await supabase.auth.getUser()).data.user?.id)
-          .single();
-          
-        if (profile) {
-          switch (profile.role) {
-            case "owner":
-              navigate("/owner/dashboard");
-              break;
-            case "manager":
-              navigate("/manager/dashboard");
-              break;
-            case "cashier":
-              navigate("/cashier/dashboard");
-              break;
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', (await supabase.auth.getUser()).data.user?.id)
+            .single();
+            
+          if (profile) {
+            switch (profile.role) {
+              case "owner":
+                navigate("/owner/dashboard");
+                break;
+              case "manager":
+                navigate("/manager/dashboard");
+                break;
+              case "cashier":
+                navigate("/cashier/dashboard");
+                break;
+            }
           }
+        } catch (error) {
+          console.error("Error checking profile:", error);
+          // If there's an error checking profile, redirect to login
+          navigate("/login");
         }
       };
       
       checkProfile();
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, loading, navigate]);
 
   useEffect(() => {
-    const createInitialOwner = async () => {
-      try {
-        console.log("Attempting to create initial owner");
-        
-        // Check if admin user exists
-        const { data: adminUser, error: signInError } = await supabase.auth.signInWithPassword({
-          email: "admin@admin",
-          password: "admin123456"
-        });
-
-        if (signInError) {
-          console.log("Admin user doesn't exist, creating...");
-          
-          // Create admin user via admin API to bypass email confirmation
-          const { data: { user }, error: signUpError } = await supabase.auth.admin.createUser({
-            email: "admin@admin",
-            password: "admin123456",
-            email_confirm: true, // Automatically confirm the email
-            user_metadata: {
-              name: "Admin"
-            }
-          });
-
-          if (signUpError) {
-            console.error("Error creating admin:", signUpError);
-            
-            // Fallback: try normal signup if admin API fails
-            const { error: regularSignUpError } = await supabase.auth.signUp({
-              email: "admin@admin",
-              password: "admin123456",
-              options: {
-                data: {
-                  name: "Admin",
-                }
-              }
-            });
-
-            if (regularSignUpError) {
-              throw regularSignUpError;
-            } else {
-              // If normal signup worked, attempt to manually confirm the email through SQL
-              toast.info("Initial admin account created but email confirmation may be required.");
-            }
-          } else {
-            toast.success("Initial admin account created successfully!");
-          }
-        } else {
-          console.log("Admin user already exists");
-        }
-      } catch (error) {
-        console.error("Error creating initial owner:", error);
-        toast.error("Failed to check or create admin account");
-      }
-    };
-
-    createInitialOwner();
+    if (isAuthenticated) return;
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,3 +110,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+//hi
