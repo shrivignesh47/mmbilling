@@ -10,7 +10,8 @@ import {
   Search, 
   ShoppingBag, 
   Trash2, 
-  User 
+  User, 
+  X
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,10 +42,20 @@ const Shops: React.FC = () => {
   const [shops, setShops] = useState<Shop[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [managers, setManagers] = useState<{id: string, name: string}[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [currentShop, setCurrentShop] = useState<Shop | null>(null);
   const { profile } = useAuth();
   
-  const form = useForm({
+  const createForm = useForm({
+    defaultValues: {
+      name: "",
+      address: "",
+      manager_id: ""
+    }
+  });
+  
+  const editForm = useForm({
     defaultValues: {
       name: "",
       address: "",
@@ -128,6 +139,15 @@ const Shops: React.FC = () => {
       supabase.removeChannel(shopsSubscription);
     };
   }, []);
+  
+  // When editing a shop, set the form values
+  useEffect(() => {
+    if (currentShop) {
+      editForm.setValue("name", currentShop.name);
+      editForm.setValue("address", currentShop.address || "");
+      editForm.setValue("manager_id", currentShop.manager_id || "");
+    }
+  }, [currentShop, editForm]);
 
   const handleCreateShop = async (values: any) => {
     try {
@@ -141,18 +161,116 @@ const Shops: React.FC = () => {
         });
 
       if (error) throw error;
+      
+      // If a manager was assigned, update their shop_id
+      if (values.manager_id) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ shop_id: null }) // First clear any existing assignments
+          .eq('id', values.manager_id);
+          
+        if (profileError) {
+          console.error('Error updating manager profile:', profileError);
+          // Continue anyway, we'll try to update after getting the new shop ID
+        }
+        
+        // Get the new shop ID
+        const { data: newShop, error: shopError } = await supabase
+          .from('shops')
+          .select('id')
+          .eq('name', values.name)
+          .single();
+          
+        if (!shopError && newShop) {
+          // Now update the manager's shop_id
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ shop_id: newShop.id })
+            .eq('id', values.manager_id);
+            
+          if (updateError) {
+            console.error('Error assigning shop to manager:', updateError);
+            toast.error('Shop created but failed to assign manager');
+          }
+        }
+      }
+      
       toast.success('Shop created successfully');
-      form.reset();
-      setIsDialogOpen(false);
+      createForm.reset();
+      setIsCreateDialogOpen(false);
+      fetchShops();
+      fetchManagers();
     } catch (error: any) {
       console.error('Error creating shop:', error);
       toast.error(error.message || 'Failed to create shop');
+    }
+  };
+  
+  const handleEditShop = async (values: any) => {
+    if (!currentShop) return;
+    
+    try {
+      // Check if the manager has changed
+      const managerChanged = values.manager_id !== currentShop.manager_id;
+      
+      // Update the shop
+      const { error } = await supabase
+        .from('shops')
+        .update({
+          name: values.name,
+          address: values.address,
+          manager_id: values.manager_id || null
+        })
+        .eq('id', currentShop.id);
+        
+      if (error) throw error;
+      
+      // If the manager has changed, update the profiles
+      if (managerChanged) {
+        // If previous manager exists, clear their shop_id
+        if (currentShop.manager_id) {
+          await supabase
+            .from('profiles')
+            .update({ shop_id: null })
+            .eq('id', currentShop.manager_id);
+        }
+        
+        // If new manager exists, set their shop_id
+        if (values.manager_id) {
+          await supabase
+            .from('profiles')
+            .update({ shop_id: currentShop.id })
+            .eq('id', values.manager_id);
+        }
+      }
+      
+      toast.success('Shop updated successfully');
+      setIsEditDialogOpen(false);
+      setCurrentShop(null);
+      fetchShops();
+    } catch (error: any) {
+      console.error('Error updating shop:', error);
+      toast.error(error.message || 'Failed to update shop');
     }
   };
 
   const handleDeleteShop = async (shopId: string) => {
     if (window.confirm('Are you sure you want to delete this shop?')) {
       try {
+        // First, find the manager and clear their shop_id
+        const shop = shops.find(s => s.id === shopId);
+        if (shop && shop.manager_id) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ shop_id: null })
+            .eq('id', shop.manager_id);
+            
+          if (profileError) {
+            console.error('Error clearing manager shop:', profileError);
+          }
+        }
+        
+        // Now delete the shop
         const { error } = await supabase
           .from('shops')
           .delete()
@@ -182,6 +300,11 @@ const Shops: React.FC = () => {
       toast.error(error.message || 'Failed to update shop status');
     }
   };
+  
+  const openEditDialog = (shop: Shop) => {
+    setCurrentShop(shop);
+    setIsEditDialogOpen(true);
+  };
 
   // Filter shops based on search term
   const filteredShops = searchTerm 
@@ -206,7 +329,7 @@ const Shops: React.FC = () => {
       </div>
 
       {/* Shops Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         <StatCard
           title="Total Shops"
           value={shops.length.toString()}
@@ -236,37 +359,37 @@ const Shops: React.FC = () => {
               Create, edit and manage your shop locations
             </CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full md:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Shop
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Create New Shop</DialogTitle>
                 <DialogDescription>
                   Add a new shop location to your business.
                 </DialogDescription>
               </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleCreateShop)} className="space-y-4">
+              <Form {...createForm}>
+                <form onSubmit={createForm.handleSubmit(handleCreateShop)} className="space-y-4">
                   <FormField
-                    control={form.control}
+                    control={createForm.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Shop Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter shop name" {...field} />
+                          <Input placeholder="Enter shop name" {...field} required />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <FormField
-                    control={form.control}
+                    control={createForm.control}
                     name="address"
                     render={({ field }) => (
                       <FormItem>
@@ -279,7 +402,7 @@ const Shops: React.FC = () => {
                     )}
                   />
                   <FormField
-                    control={form.control}
+                    control={createForm.control}
                     name="manager_id"
                     render={({ field }) => (
                       <FormItem>
@@ -300,7 +423,7 @@ const Shops: React.FC = () => {
                     )}
                   />
                   <DialogFooter>
-                    <Button type="submit">Create Shop</Button>
+                    <Button type="submit" className="w-full sm:w-auto">Create Shop</Button>
                   </DialogFooter>
                 </form>
               </Form>
@@ -325,7 +448,7 @@ const Shops: React.FC = () => {
               <p>Loading shops...</p>
             </div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {filteredShops.map((shop) => (
                 <Card key={shop.id} className="overflow-hidden">
                   <div className={`h-1 w-full ${
@@ -356,7 +479,7 @@ const Shops: React.FC = () => {
                   </CardContent>
                   <CardFooter className="border-t bg-muted/50 pt-3">
                     <div className="flex justify-between w-full">
-                      <Button size="sm" variant="ghost">
+                      <Button size="sm" variant="ghost" onClick={() => openEditDialog(shop)}>
                         <Edit className="mr-1 h-3 w-3" />
                         Edit
                       </Button>
@@ -399,6 +522,77 @@ const Shops: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      
+      {/* Edit Shop Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) setCurrentShop(null);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Shop</DialogTitle>
+            <DialogDescription>
+              Update shop details and manager assignment.
+            </DialogDescription>
+          </DialogHeader>
+          {currentShop && (
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(handleEditShop)} className="space-y-4">
+                <FormField
+                  control={editForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Shop Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter shop name" {...field} required />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Shop address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="manager_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assign Manager</FormLabel>
+                      <select
+                        {...field}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">Unassigned</option>
+                        {managers.map((manager) => (
+                          <option key={manager.id} value={manager.id}>
+                            {manager.name}
+                          </option>
+                        ))}
+                      </select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit" className="w-full sm:w-auto">Update Shop</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

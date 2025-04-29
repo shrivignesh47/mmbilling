@@ -44,7 +44,7 @@ const Users: React.FC = () => {
       email: "",
       password: "",
       name: "",
-      role: "manager" as UserRole,
+      role: "manager" as UserRole, // Fixed: Always set to manager
       shop_id: ""
     }
   });
@@ -133,7 +133,7 @@ const Users: React.FC = () => {
 
       if (error) {
         // Try regular signup as fallback
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
           options: {
@@ -146,31 +146,37 @@ const Users: React.FC = () => {
         if (signUpError) {
           throw signUpError;
         }
+        
+        if (signUpData.user) {
+          data.user = signUpData.user;
+        } else {
+          throw new Error('Failed to create user account');
+        }
       }
 
-      if (!data.user && !error) {
+      if (!data.user) {
         throw new Error('Failed to create user account');
       }
 
-      const userId = data.user?.id;
+      const userId = data.user.id;
       
       // Update the profile with role and shop assignment
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
-          role: values.role,
+          role: "manager", // Fixed: Always set to manager
           shop_id: values.shop_id || null
         })
         .eq('id', userId);
       
       if (profileError) throw profileError;
       
-      toast.success('User created successfully');
+      toast.success('Manager created successfully');
       form.reset();
       setIsDialogOpen(false);
       
-      // If assigned to a shop and role is manager, update the shop's manager_id
-      if (values.shop_id && values.role === 'manager') {
+      // If assigned to a shop, update the shop's manager_id
+      if (values.shop_id) {
         const { error: shopError } = await supabase
           .from('shops')
           .update({ manager_id: userId })
@@ -178,9 +184,13 @@ const Users: React.FC = () => {
         
         if (shopError) {
           console.error('Error updating shop manager:', shopError);
-          toast.error('User created but failed to update shop manager');
+          toast.error('Manager created but failed to update shop manager');
         }
       }
+      
+      // Refresh the user list
+      fetchUsers();
+      
     } catch (error: any) {
       console.error('Error creating user:', error);
       toast.error(error.message || 'Failed to create user');
@@ -241,7 +251,7 @@ const Users: React.FC = () => {
       </div>
 
       {/* Users Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         <StatCard
           title="Total Users"
           value={users.length.toString()}
@@ -273,12 +283,12 @@ const Users: React.FC = () => {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full md:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Manager
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Create New Manager</DialogTitle>
                 <DialogDescription>
@@ -294,7 +304,7 @@ const Users: React.FC = () => {
                       <FormItem>
                         <FormLabel>Full Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter full name" {...field} />
+                          <Input placeholder="Enter full name" {...field} required />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -307,7 +317,7 @@ const Users: React.FC = () => {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="Email address" {...field} />
+                          <Input type="email" placeholder="Email address" {...field} required />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -325,6 +335,8 @@ const Users: React.FC = () => {
                               type={showPassword ? "text" : "password"} 
                               placeholder="Set password" 
                               {...field} 
+                              required
+                              minLength={6}
                             />
                           </FormControl>
                           <button 
@@ -361,7 +373,7 @@ const Users: React.FC = () => {
                     )}
                   />
                   <DialogFooter>
-                    <Button type="submit">Create Manager</Button>
+                    <Button type="submit" className="w-full sm:w-auto">Create Manager</Button>
                   </DialogFooter>
                 </form>
               </Form>
@@ -386,7 +398,7 @@ const Users: React.FC = () => {
               <p>Loading users...</p>
             </div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {filteredUsers.map((user) => (
                 <Card key={user.id} className="overflow-hidden">
                   <div className={`h-1 w-full ${

@@ -1,15 +1,9 @@
 
 import React from "react";
 import { NavLink } from "react-router-dom";
-import {
-  BarChart3,
-  Receipt,
-  Package,
-  Settings,
-  Users,
-  ShoppingBag,
-} from "lucide-react";
+import { BarChart3, Package, ShoppingBag, LogOut, Settings, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarItemProps {
   to: string;
@@ -17,6 +11,7 @@ interface SidebarItemProps {
   children: React.ReactNode;
   end?: boolean;
   collapsed?: boolean;
+  onClick?: () => void;
 }
 
 const SidebarItem: React.FC<SidebarItemProps> = ({
@@ -25,7 +20,20 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   children,
   end,
   collapsed,
+  onClick,
 }) => {
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className="sidebar-item w-full text-left"
+      >
+        <Icon size={20} />
+        {!collapsed && <span>{children}</span>}
+      </button>
+    );
+  }
+  
   return (
     <NavLink
       to={to}
@@ -45,15 +53,21 @@ interface ManagerSidebarProps {
 }
 
 const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed = false }) => {
+  const { logout } = useAuth();
+  
+  const handleLogout = async () => {
+    await logout();
+  };
+  
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 flex flex-col h-full">
       {!collapsed && (
         <div className="px-3 py-2">
           <h2 className="mb-2 px-1 text-lg font-semibold">Manager Dashboard</h2>
         </div>
       )}
       
-      <div className="space-y-1 px-1">
+      <div className="space-y-1 px-1 flex-1">
         <SidebarItem to="/manager/dashboard" icon={BarChart3} end collapsed={collapsed}>
           Dashboard
         </SidebarItem>
@@ -63,14 +77,17 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed = false }) =>
         <SidebarItem to="/manager/products" icon={ShoppingBag} collapsed={collapsed}>
           Products
         </SidebarItem>
-        <SidebarItem to="/manager/sales" icon={Receipt} collapsed={collapsed}>
-          Sales
-        </SidebarItem>
         <SidebarItem to="/manager/cashiers" icon={Users} collapsed={collapsed}>
           Cashiers
         </SidebarItem>
         <SidebarItem to="/manager/settings" icon={Settings} collapsed={collapsed}>
           Settings
+        </SidebarItem>
+      </div>
+      
+      <div className="mt-auto border-t pt-2">
+        <SidebarItem to="#" icon={LogOut} collapsed={collapsed} onClick={handleLogout}>
+          Logout
         </SidebarItem>
       </div>
     </div>

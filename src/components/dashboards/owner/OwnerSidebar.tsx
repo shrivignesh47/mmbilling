@@ -5,11 +5,13 @@ import {
   BarChart3,
   Building2,
   CreditCard,
+  LogOut,
   Settings,
   ShoppingBag,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarItemProps {
   to: string;
@@ -17,6 +19,7 @@ interface SidebarItemProps {
   children: React.ReactNode;
   end?: boolean;
   collapsed?: boolean;
+  onClick?: () => void;
 }
 
 const SidebarItem: React.FC<SidebarItemProps> = ({
@@ -25,7 +28,20 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   children,
   end,
   collapsed,
+  onClick,
 }) => {
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className="sidebar-item w-full text-left"
+      >
+        <Icon size={20} />
+        {!collapsed && <span>{children}</span>}
+      </button>
+    );
+  }
+
   return (
     <NavLink
       to={to}
@@ -45,15 +61,21 @@ interface OwnerSidebarProps {
 }
 
 const OwnerSidebar: React.FC<OwnerSidebarProps> = ({ collapsed = false }) => {
+  const { logout } = useAuth();
+  
+  const handleLogout = async () => {
+    await logout();
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 flex flex-col h-full">
       {!collapsed && (
         <div className="px-3 py-2">
           <h2 className="mb-2 px-1 text-lg font-semibold">Owner Dashboard</h2>
         </div>
       )}
       
-      <div className="space-y-1 px-1">
+      <div className="space-y-1 px-1 flex-1">
         <SidebarItem to="/owner/dashboard" icon={BarChart3} end collapsed={collapsed}>
           Dashboard
         </SidebarItem>
@@ -63,14 +85,20 @@ const OwnerSidebar: React.FC<OwnerSidebarProps> = ({ collapsed = false }) => {
         <SidebarItem to="/owner/users" icon={Users} collapsed={collapsed}>
           Users
         </SidebarItem>
-        <SidebarItem to="/owner/subscriptions" icon={CreditCard} collapsed={collapsed}>
-          Subscriptions
-        </SidebarItem>
         <SidebarItem to="/owner/products" icon={ShoppingBag} collapsed={collapsed}>
           Products
         </SidebarItem>
+        <SidebarItem to="/owner/subscriptions" icon={CreditCard} collapsed={collapsed}>
+          Subscriptions
+        </SidebarItem>
         <SidebarItem to="/owner/settings" icon={Settings} collapsed={collapsed}>
           Settings
+        </SidebarItem>
+      </div>
+      
+      <div className="mt-auto border-t pt-2">
+        <SidebarItem to="#" icon={LogOut} collapsed={collapsed} onClick={handleLogout}>
+          Logout
         </SidebarItem>
       </div>
     </div>
