@@ -6,6 +6,14 @@ import {
   X,
   AlertCircle,
   Check,
+  Download,
+  ArrowUpDown,
+  ArrowDownUp,
+  SlidersHorizontal,
+  Filter,
+  User,
+  PackageSearch,
+  ShoppingBag
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +22,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/ui/stat-card";
+import { useNavigate } from "react-router-dom";
 
 interface Product {
   id: string;
@@ -26,6 +37,7 @@ interface Product {
 
 const Inventory: React.FC = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<keyof Product | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -139,20 +151,20 @@ const Inventory: React.FC = () => {
         <StatCard
           title="Total Stock"
           value={totalStock.toString()}
-          icon={<PackageCheck className="h-4 w-4 text-muted-foreground" />}
+          icon={<ShoppingBag className="h-4 w-4 text-muted-foreground" />}
           description="Across all products"
         />
         <StatCard
           title="Low Stock Items"
           value={lowStockCount.toString()}
-          icon={<PackageX className="h-4 w-4 text-muted-foreground" />}
+          icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
           description="Need reordering soon"
           className="border-amber-200 dark:border-amber-800"
         />
         <StatCard
           title="Out of Stock"
           value={outOfStockCount.toString()}
-          icon={<PackageX className="h-4 w-4 text-muted-foreground" />}
+          icon={<X className="h-4 w-4 text-muted-foreground" />}
           description="Unavailable products"
           className="border-destructive/50"
         />

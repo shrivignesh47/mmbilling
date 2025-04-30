@@ -153,7 +153,7 @@ const Billing = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      const { data, error, count } = await supabase
+      const { count, error } = await supabase
         .from('transactions')
         .select('*', { count: 'exact' })
         .eq('shop_id', profile.shop_id)
