@@ -158,12 +158,12 @@ export const billItemsToJson = (items: BillItem[]): Json => {
 export const parseTransactionItems = (items: Json): BillItem[] => {
   try {
     // If it's already in correct format, return as is
-    if (Array.isArray(items) && items.every(item => 
-        typeof item === 'object' && 
-        'productId' in item && 
-        'name' in item && 
-        'price' in item && 
-        'quantity' in item)) {
+    if (Array.isArray(items) && items.length > 0 && 
+        typeof items[0] === 'object' && items[0] !== null &&
+        'productId' in items[0] && 
+        'name' in items[0] && 
+        'price' in items[0] && 
+        'quantity' in items[0]) {
       return items as unknown as BillItem[];
     }
     
@@ -173,15 +173,17 @@ export const parseTransactionItems = (items: Json): BillItem[] => {
     }
     
     // If it's a JSON object from Supabase, try to convert it
-    if (typeof items === 'object') {
-      if (Array.isArray(items)) {
-        return items.map(item => ({
-          productId: item.productId || item.product_id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity
-        })) as BillItem[];
-      }
+    if (Array.isArray(items)) {
+      return items.map(item => ({
+        productId: typeof item === 'object' && item !== null ? 
+          (item.productId || item.product_id || '') : '',
+        name: typeof item === 'object' && item !== null ? 
+          (item.name || '') : '',
+        price: typeof item === 'object' && item !== null ? 
+          (typeof item.price === 'number' ? item.price : 0) : 0,
+        quantity: typeof item === 'object' && item !== null ? 
+          (typeof item.quantity === 'number' ? item.quantity : 0) : 0
+      })) as BillItem[];
     }
     
     // Fallback

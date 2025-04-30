@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   ArrowDownUp, 
   ArrowUpDown, 
@@ -15,8 +15,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { StatCard } from "@/components/dashboards/DashboardCards";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -27,58 +30,82 @@ interface Product {
   sku: string;
 }
 
-const demoProducts: Product[] = [
-  { id: "p1", name: "Wireless Headphones", category: "Electronics", price: 59.99, stock: 24, sku: "ELEC-001" },
-  { id: "p2", name: "Smart Watch", category: "Electronics", price: 129.99, stock: 18, sku: "ELEC-002" },
-  { id: "p3", name: "Bluetooth Speaker", category: "Electronics", price: 45.00, stock: 5, sku: "ELEC-003" },
-  { id: "p4", name: "Phone Case", category: "Accessories", price: 19.99, stock: 50, sku: "ACC-001" },
-  { id: "p5", name: "USB-C Cable", category: "Accessories", price: 12.99, stock: 36, sku: "ACC-002" },
-  { id: "p6", name: "Power Bank", category: "Electronics", price: 35.00, stock: 12, sku: "ELEC-004" },
-  { id: "p7", name: "Fitness Band", category: "Wearables", price: 49.99, stock: 0, sku: "WEAR-001" },
-  { id: "p8", name: "Wireless Charger", category: "Electronics", price: 29.99, stock: 3, sku: "ELEC-005" },
-  { id: "p9", name: "Tablet Stand", category: "Accessories", price: 15.99, stock: 22, sku: "ACC-003" },
-  { id: "p10", name: "Laptop Sleeve", category: "Accessories", price: 24.99, stock: 14, sku: "ACC-004" },
-];
-
 const Inventory: React.FC = () => {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<keyof Product | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Stock metrics
-  const totalStock = demoProducts.reduce((sum, product) => sum + product.stock, 0);
-  const lowStockCount = demoProducts.filter(product => product.stock > 0 && product.stock <= 5).length;
-  const outOfStockCount = demoProducts.filter(product => product.stock === 0).length;
-  
-  // Filter and sort products
-  let filteredProducts = [...demoProducts];
-  
-  if (searchTerm) {
-    filteredProducts = filteredProducts.filter(product => 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }
-  
-  if (sortField) {
-    filteredProducts.sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
+  useEffect(() => {
+    if (profile?.shop_id) {
+      fetchProducts();
+    }
+  }, [profile?.shop_id]);
+
+  useEffect(() => {
+    filterAndSortProducts();
+  }, [products, searchTerm, sortField, sortDirection]);
+
+  const fetchProducts = async () => {
+    if (!profile?.shop_id) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("shop_id", profile.shop_id);
       
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        return sortDirection === "asc" 
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
+      if (error) throw error;
       
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
-      }
-      
-      return 0;
-    });
-  }
+      setProducts(data || []);
+      setFilteredProducts(data || []);
+    } catch (error: any) {
+      console.error("Error fetching products:", error);
+      toast.error("Error loading products: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterAndSortProducts = () => {
+    let filtered = [...products];
+    
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(product => 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply sorting
+    if (sortField) {
+      filtered.sort((a, b) => {
+        const aValue = a[sortField];
+        const bValue = b[sortField];
+        
+        if (typeof aValue === "string" && typeof bValue === "string") {
+          return sortDirection === "asc" 
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        }
+        
+        if (typeof aValue === "number" && typeof bValue === "number") {
+          return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+        }
+        
+        return 0;
+      });
+    }
+    
+    setFilteredProducts(filtered);
+  };
   
   const handleSort = (field: keyof Product) => {
     if (sortField === field) {
@@ -91,8 +118,18 @@ const Inventory: React.FC = () => {
   
   const getStockStatus = (stock: number) => {
     if (stock === 0) return { label: "Out of Stock", variant: "destructive" as const };
-    if (stock <= 5) return { label: "Low Stock", variant: "warning" as const };
-    return { label: "In Stock", variant: "success" as const };
+    if (stock <= 5) return { label: "Low Stock", variant: "outline" as const };
+    return { label: "In Stock", variant: "secondary" as const };
+  };
+
+  // Stock metrics
+  const totalStock = products.reduce((sum, product) => sum + product.stock, 0);
+  const lowStockCount = products.filter(product => product.stock > 0 && product.stock <= 5).length;
+  const outOfStockCount = products.filter(product => product.stock === 0).length;
+
+  // Format currency to Rupees
+  const formatCurrency = (amount: number) => {
+    return `₹${amount.toFixed(2)}`;
   };
 
   return (
@@ -146,7 +183,7 @@ const Inventory: React.FC = () => {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button onClick={() => {}}>
+            <Button onClick={() => navigate('/manager/products')}>
               <Plus className="mr-2 h-4 w-4" />
               Add Product
             </Button>
@@ -237,30 +274,38 @@ const Inventory: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.map((product) => {
-                    const status = getStockStatus(product.stock);
-                    let badgeVariant: "default" | "destructive" | "outline" | "secondary" | null = null;
-                    
-                    if (status.variant === "success") badgeVariant = "secondary";
-                    if (status.variant === "warning") badgeVariant = "outline";
-                    if (status.variant === "destructive") badgeVariant = "destructive";
-                    
-                    return (
-                      <tr key={product.id} className="border-b">
-                        <td className="py-3 px-4">{product.name}</td>
-                        <td className="py-3 px-4">{product.category}</td>
-                        <td className="py-3 px-4 text-right">${product.price.toFixed(2)}</td>
-                        <td className="py-3 px-4 text-right">{product.stock}</td>
-                        <td className="py-3 px-4 text-center">
-                          <Badge variant={badgeVariant || "default"} className="whitespace-nowrap">
-                            {status.label}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono text-xs">{product.sku}</td>
+                  {loading ? (
+                    Array(5).fill(0).map((_, index) => (
+                      <tr key={index} className="border-b animate-pulse">
+                        <td className="py-3 px-4"><div className="h-4 bg-muted rounded w-24"></div></td>
+                        <td className="py-3 px-4"><div className="h-4 bg-muted rounded w-20"></div></td>
+                        <td className="py-3 px-4 text-right"><div className="h-4 bg-muted rounded w-16 ml-auto"></div></td>
+                        <td className="py-3 px-4 text-right"><div className="h-4 bg-muted rounded w-8 ml-auto"></div></td>
+                        <td className="py-3 px-4 text-center"><div className="h-4 bg-muted rounded w-16 mx-auto"></div></td>
+                        <td className="py-3 px-4 text-right"><div className="h-4 bg-muted rounded w-12 ml-auto"></div></td>
                       </tr>
-                    );
-                  })}
-                  {filteredProducts.length === 0 && (
+                    ))
+                  ) : (
+                    filteredProducts.map((product) => {
+                      const status = getStockStatus(product.stock);
+                      
+                      return (
+                        <tr key={product.id} className="border-b">
+                          <td className="py-3 px-4">{product.name}</td>
+                          <td className="py-3 px-4">{product.category || "Uncategorized"}</td>
+                          <td className="py-3 px-4 text-right">{formatCurrency(product.price)}</td>
+                          <td className="py-3 px-4 text-right">{product.stock}</td>
+                          <td className="py-3 px-4 text-center">
+                            <Badge variant={status.variant} className="whitespace-nowrap">
+                              {status.label}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono text-xs">{product.sku || "-"}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                  {!loading && filteredProducts.length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-6 text-center text-muted-foreground">
                         No products found matching your search.
@@ -273,11 +318,7 @@ const Inventory: React.FC = () => {
           </div>
           
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-            <div>Showing {filteredProducts.length} of {demoProducts.length} products</div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>Previous</Button>
-              <Button variant="outline" size="sm" disabled>Next</Button>
-            </div>
+            <div>Showing {filteredProducts.length} of {products.length} products</div>
           </div>
         </CardContent>
       </Card>

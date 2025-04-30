@@ -93,15 +93,15 @@ const Products = () => {
     if (searchTerm) {
       filtered = filtered.filter(product => 
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+        product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
     // Apply category filter
     if (categoryFilter) {
       filtered = filtered.filter(product => 
-        product.category.toLowerCase() === categoryFilter.toLowerCase()
+        product.category?.toLowerCase() === categoryFilter.toLowerCase()
       );
     }
     
@@ -242,34 +242,24 @@ const Products = () => {
   };
 
   const handleDeleteProduct = async (productId: string, productName: string) => {
-    if (!confirm(`Are you sure you want to delete "${productName}"? This cannot be undone.`)) {
-      return;
-    }
-    
-    try {
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", productId);
-      
-      if (error) throw error;
-      
-      toast.success("Product deleted successfully");
-      fetchProducts();
-    } catch (error: any) {
-      console.error("Error deleting product:", error);
-      toast.error("Error deleting product: " + error.message);
-    }
+    toast.error("Products cannot be deleted due to database constraints. Please set stock to 0 instead.", {
+      duration: 5000,
+    });
   };
 
   const getStockStatusBadge = (stock: number) => {
     if (stock <= 0) {
       return <Badge variant="destructive">Out of Stock</Badge>;
     } else if (stock <= 5) {
-      return <Badge variant="warning" className="bg-amber-500">Low Stock</Badge>;
+      return <Badge variant="outline" className="text-amber-500 border-amber-500">Low Stock</Badge>;
     } else {
       return <Badge variant="outline">In Stock</Badge>;
     }
+  };
+
+  // Format currency to Rupees
+  const formatCurrency = (amount: number) => {
+    return `₹${amount.toFixed(2)}`;
   };
 
   return (
@@ -461,7 +451,7 @@ const Products = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground text-sm">Price:</span>
-                        <span className="font-medium">${product.price.toFixed(2)}</span>
+                        <span className="font-medium">{formatCurrency(product.price)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground text-sm">Stock:</span>
@@ -494,7 +484,7 @@ const Products = () => {
                       onClick={() => handleDeleteProduct(product.id, product.name)}
                     >
                       <Trash2 className="mr-1 h-3 w-3" />
-                      Delete
+                      Set as Inactive
                     </Button>
                   </CardFooter>
                 </Card>
@@ -543,7 +533,7 @@ const Products = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Price ($)</Label>
+                  <Label htmlFor="price">Price (₹)</Label>
                   <Input
                     id="price"
                     type="number"
