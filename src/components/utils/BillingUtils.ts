@@ -1,4 +1,6 @@
 
+import { Json } from "@/integrations/supabase/types";
+
 interface BillItem {
   productId: string;
   name: string;
@@ -146,3 +148,48 @@ export const downloadReceipt = (
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 };
+
+// Convert BillItem[] to JSON for database storage
+export const billItemsToJson = (items: BillItem[]): Json => {
+  return items as unknown as Json;
+};
+
+// Parse JSON from database back to BillItem[]
+export const parseTransactionItems = (items: Json): BillItem[] => {
+  try {
+    // If it's already in correct format, return as is
+    if (Array.isArray(items) && items.every(item => 
+        typeof item === 'object' && 
+        'productId' in item && 
+        'name' in item && 
+        'price' in item && 
+        'quantity' in item)) {
+      return items as unknown as BillItem[];
+    }
+    
+    // If it's a JSON string, parse it
+    if (typeof items === 'string') {
+      return JSON.parse(items) as BillItem[];
+    }
+    
+    // If it's a JSON object from Supabase, try to convert it
+    if (typeof items === 'object') {
+      if (Array.isArray(items)) {
+        return items.map(item => ({
+          productId: item.productId || item.product_id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        })) as BillItem[];
+      }
+    }
+    
+    // Fallback
+    return [];
+  } catch (e) {
+    console.error("Error parsing transaction items:", e);
+    return [];
+  }
+};
+
+export type { BillItem, Product };

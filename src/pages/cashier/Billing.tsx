@@ -19,7 +19,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
@@ -28,24 +27,13 @@ import {
   removeItem as removeCartItem, 
   clearBill as clearCart,
   getTotalAmount,
-  downloadReceipt as downloadReceiptFile
+  downloadReceipt as downloadReceiptFile,
+  billItemsToJson,
+  parseTransactionItems,
+  type BillItem,
+  type Product
 } from "@/components/utils/BillingUtils";
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
-  category: string;
-  sku: string;
-}
-
-interface BillItem {
-  productId: string;
-  name: string;
-  price: number;
-  quantity: number;
-}
+import { Json } from "@/integrations/supabase/types";
 
 interface Transaction {
   id: string;
@@ -154,44 +142,6 @@ const Billing = () => {
     }
   };
 
-  // Helper function to parse transaction items
-  const parseTransactionItems = (items: any): BillItem[] => {
-    try {
-      // If it's already in correct format, return as is
-      if (Array.isArray(items) && items.every(item => 
-          typeof item === 'object' && 
-          'productId' in item && 
-          'name' in item && 
-          'price' in item && 
-          'quantity' in item)) {
-        return items as BillItem[];
-      }
-      
-      // If it's a JSON string, parse it
-      if (typeof items === 'string') {
-        return JSON.parse(items) as BillItem[];
-      }
-      
-      // If it's a JSON object from Supabase, try to convert it
-      if (typeof items === 'object') {
-        if (Array.isArray(items)) {
-          return items.map(item => ({
-            productId: item.productId || item.product_id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity
-          }));
-        }
-      }
-      
-      // Fallback
-      return [];
-    } catch (e) {
-      console.error("Error parsing transaction items:", e);
-      return [];
-    }
-  };
-
   const handleAddToBill = (product: Product) => {
     addToBill(product, billItems, setBillItems, toast);
   };
@@ -231,13 +181,13 @@ const Billing = () => {
         cashier_id: profile.id,
         transaction_id: transactionId,
         amount: getTotalAmount(billItems),
-        items: billItems,
+        items: billItemsToJson(billItems),
         payment_method: paymentMethod
       };
 
       const { data: transactionResult, error: transactionError } = await supabase
         .from("transactions")
-        .insert([transactionData])
+        .insert(transactionData)
         .select()
         .single();
 

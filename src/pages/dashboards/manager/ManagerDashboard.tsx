@@ -124,7 +124,7 @@ const ManagerDashboard: React.FC = () => {
         }
         
         // Recently restocked - use inventory_logs table
-        const { data: recentlyRestocked, error: restockedError } = await supabase
+        const { data: restockData, error: restockError } = await supabase
           .from('inventory_logs')
           .select('*')
           .eq('shop_id', profile.shop_id)
@@ -132,8 +132,8 @@ const ManagerDashboard: React.FC = () => {
           .order('created_at', { ascending: false })
           .limit(1);
           
-        if (!restockedError && recentlyRestocked && recentlyRestocked.length > 0) {
-          const restock = recentlyRestocked[0] as unknown as InventoryLog;
+        if (!restockError && restockData && restockData.length > 0) {
+          const restock = restockData[0];
           alerts.push({
             type: 'restock',
             name: restock.product_name,

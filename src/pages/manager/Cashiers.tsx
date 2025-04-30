@@ -8,15 +8,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UserPlus, AlertCircle } from "lucide-react";
+import { UserPlus, AlertCircle, User, LogOut } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 interface Cashier {
   id: string;
   name: string;
   email: string;
   role: string;
+  last_sign_in_at?: string;
+  status?: string;
 }
 
 const Cashiers = () => {
@@ -26,8 +28,10 @@ const Cashiers = () => {
   const [showAddCashierDialog, setShowAddCashierDialog] = useState(false);
   const [newCashierEmail, setNewCashierEmail] = useState("");
   const [newCashierName, setNewCashierName] = useState("");
+  const [newCashierPassword, setNewCashierPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (profile?.shop_id) {
@@ -52,14 +56,21 @@ const Cashiers = () => {
       if (error) throw error;
       
       if (data) {
-        const formattedCashiers: Cashier[] = data.map(cashier => ({
-          id: cashier.id,
-          name: cashier.name || 'Unnamed Cashier',
-          email: cashier.email || 'No email',
-          role: cashier.role
-        }));
+        // Enrich with authentication details if available
+        const enrichedCashiers: Cashier[] = await Promise.all(
+          data.map(async (cashier) => {
+            return {
+              id: cashier.id,
+              name: cashier.name || 'Unnamed Cashier',
+              email: cashier.email || 'No email',
+              role: cashier.role,
+              status: 'Active', // Default status
+              last_sign_in_at: undefined
+            };
+          })
+        );
         
-        setCashiers(formattedCashiers);
+        setCashiers(enrichedCashiers);
       }
     } catch (err: any) {
       console.error('Error fetching cashiers:', err);
@@ -77,8 +88,13 @@ const Cashiers = () => {
       return;
     }
     
-    if (!newCashierEmail || !newCashierName) {
+    if (!newCashierEmail || !newCashierName || !newCashierPassword) {
       toast.error('Please fill in all fields');
+      return;
+    }
+    
+    if (newCashierPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long');
       return;
     }
     
@@ -96,13 +112,14 @@ const Cashiers = () => {
       
       if (existingUsers && existingUsers.length > 0) {
         toast.error('A user with that email already exists');
+        setIsSubmitting(false);
         return;
       }
       
       // Create a new auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newCashierEmail,
-        password: 'temporary-password-' + Math.random().toString(36).substring(2, 10),
+        password: newCashierPassword,
         options: {
           data: {
             name: newCashierName,
@@ -123,7 +140,8 @@ const Cashiers = () => {
         .update({ 
           shop_id: profile.shop_id, 
           name: newCashierName,
-          email: newCashierEmail 
+          email: newCashierEmail,
+          role: 'cashier'
         })
         .eq('id', authData.user.id);
       
@@ -132,6 +150,7 @@ const Cashiers = () => {
       toast.success('Cashier added successfully');
       setNewCashierEmail("");
       setNewCashierName("");
+      setNewCashierPassword("");
       setShowAddCashierDialog(false);
       
       // Refresh cashiers list
@@ -190,7 +209,7 @@ const Cashiers = () => {
               <DialogHeader>
                 <DialogTitle>Add New Cashier</DialogTitle>
                 <DialogDescription>
-                  Add a new cashier to your shop. They will receive an email with login instructions.
+                  Add a new cashier to your shop. They will be able to login with these credentials.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddCashier}>
@@ -215,6 +234,30 @@ const Cashiers = () => {
                       placeholder="Enter cashier email"
                       required
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cashierPassword">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="cashierPassword"
+                        type={showPassword ? "text" : "password"}
+                        value={newCashierPassword}
+                        onChange={(e) => setNewCashierPassword(e.target.value)}
+                        placeholder="Enter password"
+                        required
+                        minLength={6}
+                      />
+                      <button 
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? "HIDE" : "SHOW"}
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Password must be at least 6 characters long
+                    </p>
                   </div>
                   
                   {error && (
@@ -287,19 +330,40 @@ const Cashiers = () => {
               {cashiers.map((cashier) => (
                 <Card key={cashier.id}>
                   <CardHeader>
-                    <CardTitle>{cashier.name}</CardTitle>
+                    <div className="flex justify-between">
+                      <CardTitle>{cashier.name}</CardTitle>
+                      {cashier.status && (
+                        <Badge variant={cashier.status === 'Active' ? 'outline' : 'secondary'}>
+                          {cashier.status}
+                        </Badge>
+                      )}
+                    </div>
                     <CardDescription>Cashier</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm mb-4">{cashier.email}</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleRemoveCashier(cashier.id)}
-                    >
-                      Remove from Shop
-                    </Button>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-2">
+                        <User className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm">{cashier.email}</p>
+                          {cashier.last_sign_in_at && (
+                            <p className="text-xs text-muted-foreground">
+                              Last login: {new Date(cashier.last_sign_in_at).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full"
+                        onClick={() => handleRemoveCashier(cashier.id)}
+                      >
+                        <LogOut className="mr-1 h-3 w-3" />
+                        Remove from Shop
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
