@@ -1,30 +1,28 @@
-
 import React, { useState, useEffect } from "react";
-import { 
-  Building, 
-  Building2, 
-  Edit, 
-  MoreHorizontal, 
-  Package2, 
-  Plus, 
-  Search, 
-  ShoppingBag, 
-  Trash2, 
-  User, 
-  X
+import {
+  Building2,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Users,
+  Package,
+  ShoppingBag,
+  Check,
+  X,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { StatCard } from "@/components/dashboards/DashboardCards";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Shop {
   id: string;
@@ -345,7 +343,7 @@ const Shops: React.FC = () => {
         <StatCard
           title="Inactive Shops"
           value={inactiveShops.toString()}
-          icon={<Package2 className="h-4 w-4 text-muted-foreground" />}
+          icon={<Package className="h-4 w-4 text-muted-foreground" />}
           description="Pending or closed shops"
         />
       </div>

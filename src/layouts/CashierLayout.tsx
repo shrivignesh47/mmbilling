@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import CashierSidebar from "@/components/dashboards/cashier/CashierSidebar";
-import { withAuth } from "@/contexts/AuthContext";
+import { withAuth } from "@/contexts/auth";
 
 const CashierLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

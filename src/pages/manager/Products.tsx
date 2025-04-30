@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   ShoppingBag,
@@ -6,20 +5,16 @@ import {
   Search,
   Edit,
   Trash2,
-  Package,
-  SlidersHorizontal,
-  X
+  X,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Product {
   id: string;
@@ -249,7 +244,7 @@ const Products = () => {
 
   const getStockStatusBadge = (stock: number) => {
     if (stock <= 0) {
-      return <Badge variant="destructive">Out of Stock</Badge>;
+      return <AlertCircle className="text-destructive" />;
     } else if (stock <= 5) {
       return <Badge variant="outline" className="text-amber-500 border-amber-500">Low Stock</Badge>;
     } else {
