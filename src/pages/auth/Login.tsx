@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Login: React.FC = () => {
@@ -20,12 +19,7 @@ const Login: React.FC = () => {
     if (isAuthenticated && !loading) {
       const checkProfile = async () => {
         try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', (await supabase.auth.getUser()).data.user?.id)
-            .single();
-            
+          const { user, profile } = await login(email, password);
           if (profile) {
             switch (profile.role) {
               case "owner":
@@ -37,12 +31,13 @@ const Login: React.FC = () => {
               case "cashier":
                 navigate("/cashier/dashboard");
                 break;
+              default:
+                navigate("/login");
+                break;
             }
           }
         } catch (error) {
           console.error("Error checking profile:", error);
-          // If there's an error checking profile, redirect to login
-          navigate("/login");
         }
       };
       
@@ -50,17 +45,17 @@ const Login: React.FC = () => {
     }
   }, [isAuthenticated, loading, navigate]);
 
-  useEffect(() => {
-    if (isAuthenticated) return;
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       toast.error("Please enter both email and password");
       return;
     }
-    await login(email, password);
+    try {
+      await login(email, password);
+    } catch (error) {
+      console.error("Login error:", error);
+    }
   };
 
   return (
@@ -110,4 +105,3 @@ const Login: React.FC = () => {
 };
 
 export default Login;
-//hi

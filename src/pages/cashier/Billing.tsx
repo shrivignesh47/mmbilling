@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Package, 
@@ -57,11 +56,15 @@ const Billing = () => {
   const [receiptData, setReceiptData] = useState<Transaction | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
+  const [dailySaleCount, setDailySaleCount] = useState(0);
+  const [dailyRevenue, setDailyRevenue] = useState(0);
 
   useEffect(() => {
     if (profile?.shop_id) {
       fetchProducts();
       fetchRecentTransactions();
+      fetchDailySaleCount();
+      fetchDailyRevenue();
     }
   }, [profile?.shop_id]);
 
@@ -139,6 +142,49 @@ const Billing = () => {
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
+    }
+  };
+
+  const fetchDailySaleCount = async () => {
+    try {
+      if (!profile?.shop_id) return;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data, error, count } = await supabase
+        .from('transactions')
+        .select('*', { count: 'exact' })
+        .eq('shop_id', profile.shop_id)
+        .gte('created_at', today.toISOString());
+      
+      if (error) throw error;
+      
+      setDailySaleCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching daily sale count:', error);
+    }
+  };
+
+  const fetchDailyRevenue = async () => {
+    try {
+      if (!profile?.shop_id) return;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('shop_id', profile.shop_id)
+        .gte('created_at', today.toISOString());
+      
+      if (error) throw error;
+      
+      const totalAmount = data.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+      setDailyRevenue(totalAmount);
+    } catch (error) {
+      console.error('Error fetching daily revenue:', error);
     }
   };
 

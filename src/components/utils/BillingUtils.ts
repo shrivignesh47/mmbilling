@@ -174,16 +174,15 @@ export const parseTransactionItems = (items: Json): BillItem[] => {
     
     // If it's a JSON object from Supabase, try to convert it
     if (Array.isArray(items)) {
-      return items.map(item => ({
-        productId: typeof item === 'object' && item !== null ? 
-          (item.productId || item.product_id || '') : '',
-        name: typeof item === 'object' && item !== null ? 
-          (item.name || '') : '',
-        price: typeof item === 'object' && item !== null ? 
-          (typeof item.price === 'number' ? item.price : 0) : 0,
-        quantity: typeof item === 'object' && item !== null ? 
-          (typeof item.quantity === 'number' ? item.quantity : 0) : 0
-      })) as BillItem[];
+      return items.map(item => {
+        const objItem = item as any;
+        return {
+          productId: objItem?.productId || objItem?.product_id || '',
+          name: objItem?.name || '',
+          price: typeof objItem?.price === 'number' ? objItem.price : 0,
+          quantity: typeof objItem?.quantity === 'number' ? objItem.quantity : 0
+        };
+      });
     }
     
     // Fallback

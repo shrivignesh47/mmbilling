@@ -19,7 +19,7 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{user: User | null, profile: Profile | null}>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
@@ -55,18 +55,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               
               // If profile has shop_id, fetch the shop name
               if (profileData && profileData.shop_id) {
-                const { data: shopData, error: shopError } = await supabase
-                  .from('shops')
-                  .select('name')
-                  .eq('id', profileData.shop_id)
-                  .single();
-                
-                if (!shopError && shopData) {
-                  setProfile({
-                    ...profileData,
-                    shop_name: shopData.name
-                  });
-                  return;
+                try {
+                  const { data: shopData, error: shopError } = await supabase
+                    .from('shops')
+                    .select('name')
+                    .eq('id', profileData.shop_id)
+                    .single();
+                  
+                  if (!shopError && shopData) {
+                    setProfile({
+                      ...profileData,
+                      shop_name: shopData.name
+                    });
+                    return;
+                  }
+                } catch (error) {
+                  console.error("Error fetching shop:", error);
                 }
               }
               
@@ -183,11 +187,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               toast.error("Unknown role. Please contact support.");
           }
         }
+        
+        toast.success("Login successful");
+        return { user: data.user, profile };
       }
       
-      toast.success("Login successful");
+      return { user: null, profile: null };
     } catch (error: any) {
       console.error("Login error:", error);
+      return { user: null, profile: null };
     } finally {
       setLoading(false);
     }
