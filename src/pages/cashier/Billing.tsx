@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Package, 
@@ -161,10 +160,16 @@ const Billing = () => {
       
       if (error) throw error;
       
-      // Fix: Ensure we're setting a number, not the PostgrestFilterBuilder object
-      setDailySaleCount(count ?? 0);
+      // Correctly extract the count value
+      if (typeof count === 'number') {
+        setDailySaleCount(count);
+      } else {
+        setDailySaleCount(0);
+        console.warn("Daily sale count returned an unexpected type:", count);
+      }
     } catch (error) {
       console.error('Error fetching daily sale count:', error);
+      setDailySaleCount(0);
     }
   };
 
@@ -183,11 +188,17 @@ const Billing = () => {
       
       if (error) throw error;
       
-      // Fix: Calculate the total amount from data instead of assigning the query result directly
-      const totalAmount = data.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
-      setDailyRevenue(totalAmount);
+      // Calculate the total amount from data
+      if (Array.isArray(data)) {
+        const totalAmount = data.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+        setDailyRevenue(totalAmount);
+      } else {
+        setDailyRevenue(0);
+        console.warn("Daily revenue data returned an unexpected type:", data);
+      }
     } catch (error) {
       console.error('Error fetching daily revenue:', error);
+      setDailyRevenue(0);
     }
   };
 
