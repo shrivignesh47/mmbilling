@@ -19,7 +19,8 @@ import {
   Building2,
   ShoppingBag,
   User,
-  Building
+  Building,
+  Shield
 } from "lucide-react";
 
 // Export all icons to be used in other components
@@ -43,9 +44,12 @@ export {
   Building2,
   ShoppingBag,
   User,
-  Building
+  Building,
+  Shield
 };
 
 // Create alias for missing icons
 export const PackageCheck = Package;
 export const PackageX = Package;
+export const ShieldCheck = Shield;
+export const UsersIcon = Users;

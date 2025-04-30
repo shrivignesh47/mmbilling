@@ -1,25 +1,28 @@
 import React, { useState, useEffect } from "react";
 import {
-  Users,
   Plus,
   Search,
   Edit,
   Trash2,
-  User,
-  Building2,
   Check,
   X,
   AlertCircle,
+  Building2,
 } from "lucide-react";
+import { Users as UsersIcon, Shield as ShieldCheck, ShoppingBag } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/ui/stat-card";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { UserRole } from "@/contexts/auth/types";
 
 interface UserProfile {
   id: string;

@@ -25,17 +25,9 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useForm } from "react-hook-form";
-import { 
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, useForm } from "@/components/ui/form-exports";
 import { StatCard } from "@/components/ui/stat-card";
+import { DialogTrigger } from "@/components/ui/dialog";
 
 interface Shop {
   id: string;
