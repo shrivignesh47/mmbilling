@@ -1,27 +1,40 @@
-
 import { Json } from "@/integrations/supabase/types";
 
-interface BillItem {
+export interface BillItem {
   productId: string;
   name: string;
   price: number;
   quantity: number;
+  unitType?: UnitType;
+  barcode?: string;
 }
 
-interface Product {
+export interface Product {
   id: string;
   name: string;
   price: number;
   stock: number;
   category: string;
-  sku: string;
+  sku: string | null;
+  unitType?: UnitType;
+  barcode?: string;
+}
+
+type UnitType = 'kg' | 'liter' | 'piece' | 'pack';
+
+export interface PaymentDetails {
+  method: 'cash' | 'card' | 'upi';
+  amountPaid?: number;
+  changeAmount?: number;
+  reference?: string;
 }
 
 export const addToBill = (
   product: Product, 
   billItems: BillItem[], 
   setBillItems: React.Dispatch<React.SetStateAction<BillItem[]>>,
-  toast: any
+  toast: any,
+  quantity: number = 1
 ) => {
   // Check if product has enough stock
   if (product.stock <= 0) {
@@ -36,15 +49,25 @@ export const addToBill = (
     // Check if we have enough stock for additional item
     const currentQuantity = billItems[existingItemIndex].quantity;
     
-    if (currentQuantity >= product.stock) {
+    if (currentQuantity + quantity > product.stock && (product.unitType === 'piece' || product.unitType === 'pack')) {
       toast.error('Not enough stock available');
       return;
     }
     
-    // Increment quantity
-    const updatedItems = [...billItems];
-    updatedItems[existingItemIndex].quantity += 1;
-    setBillItems(updatedItems);
+    // For kg/liter products, allow partial quantities
+    const canAddQuantity = product.unitType === 'kg' || product.unitType === 'liter' 
+      ? true 
+      : currentQuantity + quantity <= product.stock;
+    
+    if (canAddQuantity) {
+      // Increment quantity
+      const updatedItems = [...billItems];
+      updatedItems[existingItemIndex].quantity += quantity;
+      setBillItems(updatedItems);
+    } else {
+      toast.error('Not enough stock available');
+      return;
+    }
   } else {
     // Add new item
     setBillItems([
@@ -53,7 +76,9 @@ export const addToBill = (
         productId: product.id,
         name: product.name,
         price: product.price,
-        quantity: 1
+        quantity: quantity,
+        unitType: product.unitType || 'piece',
+        barcode: product.barcode
       }
     ]);
   }
@@ -77,10 +102,14 @@ export const updateItemQuantity = (
   }
 
   const product = products.find(p => p.id === billItems[index].productId);
+  const unitType = billItems[index].unitType || 'piece';
   
-  if (product && quantity > product.stock) {
-    toast.error(`Only ${product.stock} in stock`);
-    return;
+  if (product) {
+    // For piece/pack items, ensure integer quantities and check stock
+    if ((unitType === 'piece' || unitType === 'pack') && quantity > product.stock) {
+      toast.error(`Only ${product.stock} in stock`);
+      return;
+    }
   }
 
   const updatedItems = [...billItems];
@@ -149,12 +178,10 @@ export const downloadReceipt = (
   URL.revokeObjectURL(url);
 };
 
-// Convert BillItem[] to JSON for database storage
 export const billItemsToJson = (items: BillItem[]): Json => {
   return items as unknown as Json;
 };
 
-// Parse JSON from database back to BillItem[]
 export const parseTransactionItems = (items: Json): BillItem[] => {
   try {
     // If it's already in correct format, return as is
@@ -193,4 +220,21 @@ export const parseTransactionItems = (items: Json): BillItem[] => {
   }
 };
 
-export type { BillItem, Product };
+export const formatPaymentMethod = (method: string) => {
+  switch (method.toLowerCase()) {
+    case 'cash':
+      return 'Cash';
+    case 'card':
+      return 'Card';
+    case 'upi':
+      return 'UPI';
+    default:
+      return method;
+  }
+};
+
+export const calculateChange = (totalAmount: number, amountPaid: number): number => {
+  return Math.max(0, amountPaid - totalAmount);
+};
+
+export type { UnitType };
