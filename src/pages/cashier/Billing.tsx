@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Package, 
@@ -160,6 +161,7 @@ const Billing = () => {
       
       if (error) throw error;
       
+      // Fix: Ensure we're setting a number, not the PostgrestFilterBuilder object
       setDailySaleCount(count ?? 0);
     } catch (error) {
       console.error('Error fetching daily sale count:', error);
@@ -181,6 +183,7 @@ const Billing = () => {
       
       if (error) throw error;
       
+      // Fix: Calculate the total amount from data instead of assigning the query result directly
       const totalAmount = data.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
       setDailyRevenue(totalAmount);
     } catch (error) {
