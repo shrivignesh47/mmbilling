@@ -160,7 +160,7 @@ const Billing = () => {
       
       if (error) throw error;
       
-      setDailySaleCount(count || 0);
+      setDailySaleCount(count ?? 0);
     } catch (error) {
       console.error('Error fetching daily sale count:', error);
     }
