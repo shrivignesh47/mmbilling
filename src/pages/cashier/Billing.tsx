@@ -160,7 +160,6 @@ const Billing = () => {
       
       if (error) throw error;
       
-      // Correctly extract the count value
       if (typeof count === 'number') {
         setDailySaleCount(count);
       } else {
@@ -188,7 +187,6 @@ const Billing = () => {
       
       if (error) throw error;
       
-      // Calculate the total amount from data
       if (Array.isArray(data)) {
         const totalAmount = data.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
         setDailyRevenue(totalAmount);
