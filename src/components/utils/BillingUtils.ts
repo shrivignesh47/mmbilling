@@ -1,4 +1,3 @@
-
 import { Json } from "@/integrations/supabase/types";
 import { UnitType, formatQuantityWithUnit } from "./UnitUtils";
 
@@ -237,6 +236,5 @@ export const calculateChange = (totalAmount: number, amountPaid: number): number
   return Math.max(0, amountPaid - totalAmount);
 };
 
-// Re-export the formatQuantityWithUnit function for convenience
-export { formatQuantityWithUnit };
+// Export the UnitType but reference the formatQuantityWithUnit function from UnitUtils
 export type { UnitType };

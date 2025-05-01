@@ -1,11 +1,9 @@
-
 import React, { useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { Download, Printer, Share } from 'lucide-react';
-import { formatPaymentMethod } from '@/components/utils/BillingUtils';
+import { formatPaymentMethod, type BillItem } from '@/components/utils/BillingUtils';
 import { formatQuantityWithUnit } from '@/components/utils/UnitUtils';
-import type { BillItem } from '@/components/utils/BillingUtils';
 
 interface ReceiptDialogProps {
   isOpen: boolean;

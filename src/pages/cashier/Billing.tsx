@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Package, 
@@ -34,7 +35,6 @@ import {
   billItemsToJson,
   parseTransactionItems,
   formatPaymentMethod,
-  formatQuantityWithUnit,
   type BillItem,
   type Product,
   type UnitType,
@@ -220,7 +220,8 @@ const Billing = () => {
           amount: transaction.amount,
           items: parseTransactionItems(transaction.items),
           payment_method: transaction.payment_method,
-          payment_details: transaction.payment_details as Transaction['payment_details']
+          // Cast payment_details to the expected type
+          payment_details: transaction.payment_details as Transaction['payment_details'] || undefined
         }));
         
         setRecentTransactions(typedTransactions);
@@ -369,7 +370,7 @@ const Billing = () => {
           amount: transactionResult.amount,
           items: parseTransactionItems(transactionResult.items),
           payment_method: transactionResult.payment_method,
-          payment_details: transactionResult.payment_details as Transaction['payment_details']
+          payment_details: transactionResult.payment_details as Transaction['payment_details'] || undefined
         };
         
         setReceiptData(transaction);
