@@ -40,6 +40,7 @@ import {
   type UnitType,
   type PaymentDetails
 } from "@/components/utils/BillingUtils";
+import { formatQuantityWithUnit } from "@/components/utils/UnitUtils";
 import { exportToExcel, formatProductsForExport } from "@/components/utils/ExportUtils";
 import { generateProductBarcode } from "@/components/utils/BarcodeUtils";
 import BarcodeScanner from "@/components/products/BarcodeScanner";
@@ -219,7 +220,7 @@ const Billing = () => {
           amount: transaction.amount,
           items: parseTransactionItems(transaction.items),
           payment_method: transaction.payment_method,
-          payment_details: transaction.payment_details as any
+          payment_details: transaction.payment_details as Transaction['payment_details']
         }));
         
         setRecentTransactions(typedTransactions);
@@ -368,7 +369,7 @@ const Billing = () => {
           amount: transactionResult.amount,
           items: parseTransactionItems(transactionResult.items),
           payment_method: transactionResult.payment_method,
-          payment_details: transactionResult.payment_details
+          payment_details: transactionResult.payment_details as Transaction['payment_details']
         };
         
         setReceiptData(transaction);
