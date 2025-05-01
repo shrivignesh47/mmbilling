@@ -1,3 +1,4 @@
+
 import { useRef } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -106,6 +107,7 @@ export const useBillingActions = ({
       toast.success('Payment processed successfully');
       
       if (transactionResult) {
+        // Fixed error by explicitly handling payment_details conversion
         const transaction: Transaction = {
           id: transactionResult.id,
           transaction_id: transactionResult.transaction_id,
@@ -113,7 +115,7 @@ export const useBillingActions = ({
           amount: transactionResult.amount,
           items: parseTransactionItems(transactionResult.items),
           payment_method: transactionResult.payment_method,
-          payment_details: transactionResult.payment_details
+          payment_details: transactionResult.payment_details as any
         };
         
         setReceiptData(transaction);

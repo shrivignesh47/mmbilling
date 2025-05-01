@@ -8,7 +8,9 @@ import {
   X,
   AlertCircle,
   SlidersHorizontal,
-  Package
+  Package,
+  Barcode,
+  FileText
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,9 @@ import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import ProductForm, { ProductFormData } from "@/components/products/ProductForm";
+import BarcodeGenerator from "@/components/products/BarcodeGenerator";
+import { exportBarcodesToExcel, generateBarcode } from "@/components/utils/BarcodeGeneratorUtils";
 
 interface Product {
   id: string;
@@ -28,6 +33,8 @@ interface Product {
   price: number;
   stock: number;
   sku: string;
+  barcode?: string;
+  unitType?: string;
   sales_count: number;
   created_at: string;
 }
@@ -41,18 +48,13 @@ const Products = () => {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'low-stock' | 'out-of-stock'>('all');
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [isBarcodeDialogOpen, setIsBarcodeDialogOpen] = useState(false);
+  const [selectedProductForBarcode, setSelectedProductForBarcode] = useState<Product | null>(null);
   
   // Product form state
   const [productFormMode, setProductFormMode] = useState<'add' | 'edit'>('add');
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    price: 0,
-    stock: 0,
-    sku: '',
-  });
   
   useEffect(() => {
     if (profile?.shop_id) {
@@ -76,8 +78,14 @@ const Products = () => {
       
       if (error) throw error;
       
-      setProducts(data || []);
-      setFilteredProducts(data || []);
+      // Add barcode to each product if not already present
+      const productsWithBarcodes = (data || []).map(product => ({
+        ...product,
+        barcode: product.barcode || generateBarcode(product)
+      }));
+      
+      setProducts(productsWithBarcodes);
+      setFilteredProducts(productsWithBarcodes);
     } catch (error: any) {
       console.error("Error fetching products:", error);
       toast.error("Error loading products: " + error.message);
@@ -136,31 +144,32 @@ const Products = () => {
 
   const openAddProductForm = () => {
     setProductFormMode('add');
-    setFormData({
-      name: '',
-      category: '',
-      price: 0,
-      stock: 0,
-      sku: '',
-    });
+    setSelectedProduct(null);
     setIsProductFormOpen(true);
   };
 
   const openEditProductForm = (product: Product) => {
     setProductFormMode('edit');
     setSelectedProduct(product);
-    setFormData({
-      name: product.name,
-      category: product.category || '',
-      price: product.price,
-      stock: product.stock,
-      sku: product.sku || '',
-    });
     setIsProductFormOpen(true);
   };
 
-  const handleProductFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleViewBarcode = (product: Product) => {
+    setSelectedProductForBarcode(product);
+    setIsBarcodeDialogOpen(true);
+  };
+
+  const handleExportAllBarcodes = () => {
+    if (products.length === 0) {
+      toast.error("No products to export barcodes");
+      return;
+    }
+    
+    exportBarcodesToExcel(products);
+    toast.success("Barcodes exported to Excel");
+  };
+
+  const handleProductFormSubmit = async (formData: ProductFormData) => {
     if (!profile?.shop_id) {
       toast.error("No shop assigned");
       return;
@@ -168,6 +177,9 @@ const Products = () => {
     
     try {
       if (productFormMode === 'add') {
+        // Generate barcode for new product
+        const barcode = formData.sku || `PROD-${Date.now().toString().slice(-8)}`;
+        
         // Add product
         const { data, error } = await supabase
           .from("products")
@@ -178,6 +190,8 @@ const Products = () => {
             price: formData.price,
             stock: formData.stock,
             sku: formData.sku,
+            barcode: barcode,
+            unitType: formData.unitType || 'piece'
           })
           .select();
         
@@ -207,6 +221,7 @@ const Products = () => {
             price: formData.price,
             stock: formData.stock,
             sku: formData.sku,
+            barcode: formData.barcode
           })
           .eq("id", selectedProduct.id);
         
@@ -271,12 +286,20 @@ const Products = () => {
             Manage your shop's products
           </p>
         </div>
-        {profile?.shop_id && (
-          <Button onClick={openAddProductForm}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {profile?.shop_id && (
+            <>
+              <Button variant="outline" onClick={handleExportAllBarcodes}>
+                <FileText className="mr-2 h-4 w-4" />
+                Export Barcodes
+              </Button>
+              <Button onClick={openAddProductForm}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {!profile?.shop_id && (
@@ -457,12 +480,20 @@ const Products = () => {
                         <span className="text-muted-foreground text-sm">Stock:</span>
                         <span className="font-medium">{product.stock} units</span>
                       </div>
-                      {product.sku && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground text-sm">SKU:</span>
-                          <span className="font-medium">{product.sku}</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground text-sm">Barcode:</span>
+                        <div className="flex items-center">
+                          <span className="font-mono text-xs truncate mr-1 max-w-[100px]">{product.barcode}</span>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-5 w-5" 
+                            onClick={() => handleViewBarcode(product)}
+                          >
+                            <Barcode className="h-3 w-3" />
+                          </Button>
                         </div>
-                      )}
+                      </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground text-sm">Sales:</span>
                         <span className="font-medium">{product.sales_count || 0} units</span>
@@ -495,90 +526,42 @@ const Products = () => {
       )}
       
       {/* Product Form Dialog */}
-      <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
+      <ProductForm
+        isOpen={isProductFormOpen}
+        onClose={() => setIsProductFormOpen(false)}
+        onSubmit={handleProductFormSubmit}
+        productMode={productFormMode}
+        initialData={selectedProduct ? {
+          id: selectedProduct.id,
+          name: selectedProduct.name,
+          category: selectedProduct.category || '',
+          price: selectedProduct.price,
+          stock: selectedProduct.stock,
+          sku: selectedProduct.sku || '',
+          barcode: selectedProduct.barcode,
+          unitType: selectedProduct.unitType
+        } : undefined}
+        exportBarcodes={handleExportAllBarcodes}
+      />
+      
+      {/* Barcode Dialog */}
+      <Dialog open={isBarcodeDialogOpen} onOpenChange={setIsBarcodeDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {productFormMode === 'add' ? 'Add New Product' : 'Edit Product'}
-            </DialogTitle>
+            <DialogTitle>Product Barcode</DialogTitle>
             <DialogDescription>
-              {productFormMode === 'add' 
-                ? 'Add a new product to your inventory' 
-                : 'Update product information'}
+              View and download barcode for {selectedProductForBarcode?.name}
             </DialogDescription>
           </DialogHeader>
           
-          <form onSubmit={handleProductFormSubmit}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Product Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Enter product name"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  placeholder="Enter product category"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (₹)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stock</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value)})}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="sku">SKU (Optional)</Label>
-                <Input
-                  id="sku"
-                  value={formData.sku}
-                  onChange={(e) => setFormData({...formData, sku: e.target.value})}
-                  placeholder="Enter product SKU"
-                />
-              </div>
+          {selectedProductForBarcode && (
+            <div className="py-4">
+              <BarcodeGenerator 
+                product={selectedProductForBarcode} 
+                onExportBarcodes={handleExportAllBarcodes}
+              />
             </div>
-            
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsProductFormOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {productFormMode === 'add' ? 'Add Product' : 'Save Changes'}
-              </Button>
-            </DialogFooter>
-          </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>

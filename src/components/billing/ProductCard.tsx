@@ -4,6 +4,7 @@ import { Card, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Barcode } from "lucide-react";
 import { Product } from "./types";
+import { generateBarcode } from "../utils/BarcodeGeneratorUtils";
 
 interface ProductCardProps {
   product: Product;
@@ -11,6 +12,9 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToBill }) => {
+  // Ensure product has a barcode, either from the product or generate one
+  const barcode = product.barcode || generateBarcode(product);
+  
   return (
     <Card key={product.id} className="overflow-hidden">
       <div className="p-4">
@@ -29,12 +33,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToBill }) => {
             Stock: {product.stock} {product.unitType === 'kg' || product.unitType === 'liter' ? product.unitType : ''}
           </span>
         </div>
-        {product.barcode && (
-          <div className="mt-1 text-xs flex items-center text-muted-foreground">
-            <Barcode className="h-3 w-3 mr-1" />
-            <span className="font-mono truncate">{product.barcode}</span>
-          </div>
-        )}
+        <div className="mt-1 text-xs flex items-center text-muted-foreground">
+          <Barcode className="h-3 w-3 mr-1" />
+          <span className="font-mono truncate">{barcode}</span>
+        </div>
       </div>
       <CardFooter className="border-t bg-muted/50 p-2">
         <Button 
