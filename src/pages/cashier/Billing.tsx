@@ -1,40 +1,24 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  Package, 
-  Plus, 
-  Trash2, 
-  CreditCard, 
-  Receipt, 
-  Search,
-  Download,
-  Check,
-  X,
-  Barcode,
-  FileText,
-  QrCode
-} from "lucide-react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Package } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Import our components and utilities
 import { 
   BillItem,
   Product,
   Transaction,
-  TransactionResponse,
-  PaymentDetails
+  TransactionResponse
 } from "@/components/billing/types";
 import ProductList from "@/components/billing/ProductList";
 import CurrentBill from "@/components/billing/CurrentBill";
 import TransactionHistory from "@/components/billing/TransactionHistory";
 import BillingStats from "@/components/billing/BillingStats";
+import CheckoutDialog from "@/components/billing/CheckoutDialog";
+import ReceiptDialog from "@/components/billing/ReceiptDialog";
 import { useBillingActions } from "@/hooks/useBillingActions";
 import { useBillingData } from "@/hooks/useBillingData";
 
@@ -44,6 +28,7 @@ const Billing = () => {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<Transaction | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
   
   const { 
@@ -57,7 +42,6 @@ const Billing = () => {
     searchTerm,
     selectedCategory,
     categories,
-    isPaymentProcessing,
     setSearchTerm,
     setSelectedCategory,
     setBillItems

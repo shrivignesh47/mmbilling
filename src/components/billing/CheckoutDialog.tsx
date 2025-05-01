@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, CreditCard, Cash } from "lucide-react";
+import { Check, CreditCard, Wallet } from "lucide-react";
 import { BillItem, PaymentDetails } from "./types";
 import { calculateChange } from "@/components/utils/BillingUtils";
 
@@ -164,7 +164,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
             className="relative"
           >
             {isProcessing ? 'Processing...' : 'Complete Payment'}
-            {paymentMethod === 'cash' && <Cash className="ml-2 h-4 w-4" />}
+            {paymentMethod === 'cash' && <Wallet className="ml-2 h-4 w-4" />}
             {paymentMethod === 'card' && <CreditCard className="ml-2 h-4 w-4" />}
             {paymentMethod === 'upi' && <Check className="ml-2 h-4 w-4" />}
           </Button>

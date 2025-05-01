@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Product, BillItem, Transaction, TransactionResponse, ShopDetails } from "@/components/billing/types";
 import { parseTransactionItems } from "@/components/utils/BillingUtils";
+import { UnitType } from "@/components/utils/UnitUtils";
 
 export const useBillingData = (profile: any) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -101,7 +102,7 @@ export const useBillingData = (profile: any) => {
           const barcode = product.sku || `PROD-${product.id.slice(-8).toUpperCase()}`;
           
           // Determine unit type based on category
-          let unitType = 'piece' as const;
+          let unitType: UnitType = 'piece';
           if (product.category) {
             const category = product.category.toLowerCase();
             if (category.includes('vegetable') || category.includes('fruit') || category.includes('produce')) {
@@ -182,12 +183,7 @@ export const useBillingData = (profile: any) => {
       
       if (error) throw error;
       
-      if (typeof count === 'number') {
-        setDailySaleCount(count);
-      } else {
-        setDailySaleCount(0);
-        console.warn("Daily sale count returned an unexpected type:", count);
-      }
+      setDailySaleCount(count || 0);
     } catch (error) {
       console.error('Error fetching daily sale count:', error);
       setDailySaleCount(0);

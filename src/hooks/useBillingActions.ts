@@ -1,8 +1,7 @@
-
 import { useRef } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Product, BillItem, Transaction } from "@/components/billing/types";
+import { Product, BillItem, Transaction, TransactionResponse } from "@/components/billing/types";
 import {
   addToBill,
   updateItemQuantity,
@@ -114,7 +113,7 @@ export const useBillingActions = ({
           amount: transactionResult.amount,
           items: parseTransactionItems(transactionResult.items),
           payment_method: transactionResult.payment_method,
-          payment_details: transactionResult.payment_details as any
+          payment_details: transactionResult.payment_details
         };
         
         setReceiptData(transaction);
@@ -133,8 +132,8 @@ export const useBillingActions = ({
   };
 
   const handleDownloadReceipt = () => {
-    if (receiptRef.current && receiptData) {
-      downloadReceipt(receiptRef, receiptData);
+    if (receiptRef.current) {
+      downloadReceipt(receiptRef, null); // The receipt component will handle the data
     }
   };
 
