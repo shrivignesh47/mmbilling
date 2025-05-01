@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Package, 
@@ -34,6 +33,7 @@ import {
   downloadReceipt as downloadReceiptFile,
   billItemsToJson,
   parseTransactionItems,
+  formatPaymentMethod,
   formatQuantityWithUnit,
   type BillItem,
   type Product,
@@ -55,7 +55,7 @@ interface Transaction {
   amount: number;
   items: BillItem[];
   payment_method: string;
-  paymentDetails?: {
+  payment_details?: {
     amountPaid?: number;
     changeAmount?: number;
     reference?: string;
@@ -219,7 +219,7 @@ const Billing = () => {
           amount: transaction.amount,
           items: parseTransactionItems(transaction.items),
           payment_method: transaction.payment_method,
-          paymentDetails: transaction.payment_details as any
+          payment_details: transaction.payment_details as any
         }));
         
         setRecentTransactions(typedTransactions);
@@ -368,7 +368,7 @@ const Billing = () => {
           amount: transactionResult.amount,
           items: parseTransactionItems(transactionResult.items),
           payment_method: transactionResult.payment_method,
-          paymentDetails: transactionResult.payment_details
+          payment_details: transactionResult.payment_details
         };
         
         setReceiptData(transaction);

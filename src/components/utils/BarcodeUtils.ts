@@ -23,9 +23,16 @@ export const generateBarcodeSVG = (value: string): string => {
 
 // Generate QR code for scanning at checkout
 export const generateQRCode = async (value: string): Promise<string> => {
-  const QRCode = await import('qrcode');
-  return await QRCode.toDataURL(value, {
-    width: 200,
-    margin: 1
-  });
+  try {
+    // Dynamically import qrcode
+    const QRCode = await import('qrcode');
+    return await QRCode.toDataURL(value, {
+      width: 200,
+      margin: 1
+    });
+  } catch (error) {
+    console.error("Error generating QR code:", error);
+    // Return a placeholder or empty string if QR code generation fails
+    return '';
+  }
 };

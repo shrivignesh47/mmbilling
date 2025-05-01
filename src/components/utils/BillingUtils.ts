@@ -1,4 +1,6 @@
+
 import { Json } from "@/integrations/supabase/types";
+import { UnitType, formatQuantityWithUnit } from "./UnitUtils";
 
 export interface BillItem {
   productId: string;
@@ -19,8 +21,6 @@ export interface Product {
   unitType?: UnitType;
   barcode?: string;
 }
-
-type UnitType = 'kg' | 'liter' | 'piece' | 'pack';
 
 export interface PaymentDetails {
   method: 'cash' | 'card' | 'upi';
@@ -237,4 +237,6 @@ export const calculateChange = (totalAmount: number, amountPaid: number): number
   return Math.max(0, amountPaid - totalAmount);
 };
 
+// Re-export the formatQuantityWithUnit function for convenience
+export { formatQuantityWithUnit };
 export type { UnitType };

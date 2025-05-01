@@ -10,12 +10,14 @@ interface MainLayoutProps {
   sidebarContent: React.ReactNode;
   sidebarCollapsed?: boolean;
   toggleSidebar?: () => void;
+  shopName?: string;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ 
   sidebarContent, 
   sidebarCollapsed = false,
-  toggleSidebar = () => {}
+  toggleSidebar = () => {},
+  shopName
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile, logout } = useAuth();
@@ -64,7 +66,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           </Button>
           
           {/* App Title */}
-          <span className="font-bold text-lg md:text-xl ml-2">MM Billing</span>
+          <span className="font-bold text-lg md:text-xl ml-2">
+            {shopName ? `${shopName} - MM Billing` : "MM Billing"}
+          </span>
           
           <div className="ml-auto flex items-center gap-2">
             {/* User info */}

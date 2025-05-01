@@ -52,7 +52,6 @@ const CashierLayout: React.FC = () => {
       sidebarContent={<CashierSidebar collapsed={sidebarCollapsed} />} 
       sidebarCollapsed={sidebarCollapsed}
       toggleSidebar={toggleSidebar}
-      shopName={shopDetails?.name}
     />
   );
 };
