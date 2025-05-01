@@ -56,7 +56,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
     
     // Generate barcode if not already present
     if (!formData.barcode && formData.id) {
-      formData.barcode = generateBarcode(formData);
+      formData.barcode = generateBarcode({
+        id: formData.id,
+        sku: formData.sku
+      });
     }
     
     onSubmit(formData);

@@ -17,31 +17,7 @@ const Login: React.FC = () => {
   useEffect(() => {
     // Only check authentication after explicit login, not on mount
     if (isAuthenticated && !loading) {
-      const checkProfile = async () => {
-        try {
-          const { user, profile } = await login(email, password);
-          if (profile) {
-            switch (profile.role) {
-              case "owner":
-                navigate("/owner/dashboard");
-                break;
-              case "manager":
-                navigate("/manager/dashboard");
-                break;
-              case "cashier":
-                navigate("/cashier/dashboard");
-                break;
-              default:
-                navigate("/login");
-                break;
-            }
-          }
-        } catch (error) {
-          console.error("Error checking profile:", error);
-        }
-      };
-      
-      checkProfile();
+      navigate("/cashier/dashboard");
     }
   }, [isAuthenticated, loading, navigate]);
 
@@ -52,9 +28,32 @@ const Login: React.FC = () => {
       return;
     }
     try {
-      await login(email, password);
-    } catch (error) {
+      const { error, profile } = await login(email, password);
+      
+      if (error) {
+        toast.error(`Login failed: ${error.message}`);
+        return;
+      }
+      
+      if (profile) {
+        switch (profile.role) {
+          case "owner":
+            navigate("/owner/dashboard");
+            break;
+          case "manager":
+            navigate("/manager/dashboard");
+            break;
+          case "cashier":
+            navigate("/cashier/dashboard");
+            break;
+          default:
+            navigate("/login");
+            break;
+        }
+      }
+    } catch (error: any) {
       console.error("Login error:", error);
+      toast.error(`Login error: ${error.message}`);
     }
   };
 

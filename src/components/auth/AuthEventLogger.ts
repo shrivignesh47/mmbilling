@@ -10,12 +10,17 @@ export const logAuthEvent = async (
   if (!userId) return;
   
   try {
+    // Use transactions table instead of auth_events since it exists in the schema
     await supabase
-      .from('auth_events')
+      .from('transactions')
       .insert({
+        transaction_id: `auth-${Date.now()}`,
         user_id: userId,
-        event: event,
-        metadata: metadata || {}
+        event_type: event,
+        items: metadata || {},
+        shop_id: '00000000-0000-0000-0000-000000000000', // Default shop ID
+        amount: 0, // Not applicable for auth events
+        payment_method: 'system' // Not applicable for auth events
       });
   } catch (error) {
     console.error('Failed to log auth event:', error);

@@ -1,30 +1,17 @@
+
 import React, { useState, useEffect } from "react";
-import {
-  ShoppingBag,
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  X,
-  AlertCircle,
-  SlidersHorizontal,
-  Package,
-  Barcode,
-  FileText
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { exportBarcodesToExcel, generateBarcode } from "@/components/utils/BarcodeGeneratorUtils";
+
+// Import our refactored components
+import ProductsHeader from "@/components/products/ProductsHeader";
+import ProductsFilter from "@/components/products/ProductsFilter";
+import ProductsGrid from "@/components/products/ProductsGrid";
 import ProductForm, { ProductFormData } from "@/components/products/ProductForm";
 import BarcodeGenerator from "@/components/products/BarcodeGenerator";
-import { exportBarcodesToExcel, generateBarcode } from "@/components/utils/BarcodeGeneratorUtils";
 
 interface Product {
   id: string;
@@ -262,16 +249,6 @@ const Products = () => {
     });
   };
 
-  const getStockStatusBadge = (stock: number) => {
-    if (stock <= 0) {
-      return <AlertCircle className="text-destructive" />;
-    } else if (stock <= 5) {
-      return <Badge variant="outline" className="text-amber-500 border-amber-500">Low Stock</Badge>;
-    } else {
-      return <Badge variant="outline">In Stock</Badge>;
-    }
-  };
-
   // Format currency to Rupees
   const formatCurrency = (amount: number) => {
     return `₹${amount.toFixed(2)}`;
@@ -279,251 +256,41 @@ const Products = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Products</h2>
-          <p className="text-muted-foreground">
-            Manage your shop's products
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {profile?.shop_id && (
-            <>
-              <Button variant="outline" onClick={handleExportAllBarcodes}>
-                <FileText className="mr-2 h-4 w-4" />
-                Export Barcodes
-              </Button>
-              <Button onClick={openAddProductForm}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Product
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {!profile?.shop_id && (
-        <Alert>
-          <AlertDescription>
-            You haven't been assigned to a shop yet. Please contact the owner to assign you to a shop.
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Header with title and action buttons */}
+      <ProductsHeader 
+        shopId={profile?.shop_id}
+        openAddProductForm={openAddProductForm}
+        handleExportAllBarcodes={handleExportAllBarcodes}
+      />
       
       {/* Search and filters */}
       {profile?.shop_id && (
-        <div className="flex gap-4 items-center">
-          <div className="relative flex-grow">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search products..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button
-                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-                onClick={() => setSearchTerm('')}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          
-          <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
-            <Button variant="outline" onClick={() => setIsFilterDialogOpen(true)}>
-              <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Filter Products</DialogTitle>
-                <DialogDescription>
-                  Refine the product list using filters
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={categoryFilter === null ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCategoryFilter(null)}
-                    >
-                      All
-                    </Button>
-                    {getUniqueCategories().map((category) => (
-                      <Button
-                        key={category}
-                        variant={categoryFilter === category ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCategoryFilter(category)}
-                      >
-                        {category}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Stock Status</Label>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={stockFilter === 'all' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStockFilter('all')}
-                    >
-                      All
-                    </Button>
-                    <Button
-                      variant={stockFilter === 'in-stock' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStockFilter('in-stock')}
-                    >
-                      In Stock
-                    </Button>
-                    <Button
-                      variant={stockFilter === 'low-stock' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStockFilter('low-stock')}
-                    >
-                      Low Stock
-                    </Button>
-                    <Button
-                      variant={stockFilter === 'out-of-stock' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStockFilter('out-of-stock')}
-                    >
-                      Out of Stock
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={resetFilters}>Reset Filters</Button>
-                <Button onClick={() => setIsFilterDialogOpen(false)}>Apply</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <ProductsFilter
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+          stockFilter={stockFilter}
+          setStockFilter={setStockFilter}
+          isFilterDialogOpen={isFilterDialogOpen}
+          setIsFilterDialogOpen={setIsFilterDialogOpen}
+          resetFilters={resetFilters}
+          categories={getUniqueCategories()}
+        />
       )}
       
       {/* Products List */}
-      {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="pb-2">
-                <div className="h-5 bg-muted rounded w-3/4"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="h-4 bg-muted rounded w-1/3 mb-2"></div>
-                <div className="h-4 bg-muted rounded w-1/4 mb-2"></div>
-                <div className="h-4 bg-muted rounded w-1/2"></div>
-              </CardContent>
-              <CardFooter>
-                <div className="h-9 bg-muted rounded w-full"></div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <>
-          {filteredProducts.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-10">
-                <Package className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-2">No products found</p>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {products.length > 0
-                    ? "Try adjusting your search or filters"
-                    : "Start by adding some products to your inventory"}
-                </p>
-                {products.length === 0 && (
-                  <Button onClick={openAddProductForm}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Your First Product
-                  </Button>
-                )}
-                {products.length > 0 && (
-                  <Button variant="outline" onClick={resetFilters}>
-                    Reset Filters
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredProducts.map((product) => (
-                <Card key={product.id}>
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-base">{product.name}</CardTitle>
-                        <CardDescription>{product.category || "Uncategorized"}</CardDescription>
-                      </div>
-                      {getStockStatusBadge(product.stock)}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pb-2">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground text-sm">Price:</span>
-                        <span className="font-medium">{formatCurrency(product.price)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground text-sm">Stock:</span>
-                        <span className="font-medium">{product.stock} units</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground text-sm">Barcode:</span>
-                        <div className="flex items-center">
-                          <span className="font-mono text-xs truncate mr-1 max-w-[100px]">{product.barcode}</span>
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="h-5 w-5" 
-                            onClick={() => handleViewBarcode(product)}
-                          >
-                            <Barcode className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground text-sm">Sales:</span>
-                        <span className="font-medium">{product.sales_count || 0} units</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex gap-2">
-                    <Button
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => openEditProductForm(product)}
-                    >
-                      <Edit className="mr-1 h-3 w-3" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline" 
-                      className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDeleteProduct(product.id, product.name)}
-                    >
-                      <Trash2 className="mr-1 h-3 w-3" />
-                      Set as Inactive
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+      <ProductsGrid
+        loading={loading}
+        filteredProducts={filteredProducts}
+        products={products}
+        formatCurrency={formatCurrency}
+        handleViewBarcode={handleViewBarcode}
+        openEditProductForm={openEditProductForm}
+        handleDeleteProduct={handleDeleteProduct}
+        openAddProductForm={openAddProductForm}
+        resetFilters={resetFilters}
+      />
       
       {/* Product Form Dialog */}
       <ProductForm

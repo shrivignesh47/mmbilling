@@ -14,9 +14,12 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   profileLoading: boolean;
+  isAuthenticated: boolean; // Add missing property
   login: (email: string, password: string) => Promise<{ 
-    error: Error | null; 
-    data: Session | null 
+    user?: User | null;
+    profile?: Profile | null;
+    error?: Error | null; 
+    data?: Session | null 
   }>;
   logout: () => Promise<void>;
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
@@ -29,6 +32,7 @@ const defaultValues: AuthContextType = {
   profile: null,
   loading: true,
   profileLoading: true,
+  isAuthenticated: false, // Add missing property
   login: async () => ({ error: null, data: null }),
   logout: async () => {},
   setProfile: () => {},
@@ -52,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Function to fetch user profile
   const fetchProfile = async (userId: string) => {
@@ -71,17 +76,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Handle the response from Supabase correctly
         const profileData: Profile = {
           id: data.id,
-          name: data.name,
-          email: data.email,
+          name: data.name || '',
           role: data.role,
           shop_id: data.shop_id,
           shop_name: data.shops?.name || null
         };
         
         setProfile(profileData);
+        return profileData;
       }
+      return null;
     } catch (error) {
       console.error('Error loading user profile:', error);
+      return null;
     } finally {
       setProfileLoading(false);
     }
@@ -98,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Sync auth state with our context
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        setIsAuthenticated(!!currentSession);
 
         if (event === 'SIGNED_IN' && currentSession?.user) {
           // Fetch profile when user signs in
@@ -116,6 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: { session: initialSession } } = await supabase.auth.getSession();
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
+      setIsAuthenticated(!!initialSession);
 
       if (initialSession?.user) {
         await fetchProfile(initialSession.user.id);
@@ -145,12 +154,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error, data: null };
       }
 
+      let userProfile = null;
       if (data.user) {
         // Fetch profile after successful login
-        fetchProfile(data.user.id);
+        userProfile = await fetchProfile(data.user.id);
       }
 
-      return { error: null, data: data.session };
+      setIsAuthenticated(!!data.session);
+      return { user: data.user, profile: userProfile, data: data.session };
     } catch (error) {
       return { error: error as Error, data: null };
     }
@@ -166,6 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       await supabase.auth.signOut();
       setProfile(null);
+      setIsAuthenticated(false);
     } catch (error) {
       console.error('Error during logout:', error);
     }
@@ -177,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile,
     loading,
     profileLoading,
+    isAuthenticated,
     login,
     logout,
     setProfile,
