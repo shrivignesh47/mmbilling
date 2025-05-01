@@ -1,20 +1,20 @@
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Check, CreditCard, QrCode } from 'lucide-react';
-import { Tabs, TabsList, TabsContent, TabsTrigger } from '@/components/ui/tabs';
-import { calculateChange, type BillItem } from '@/components/utils/BillingUtils';
-import { toast } from 'sonner';
+import React, { useState } from "react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Check, CreditCard, Cash } from "lucide-react";
+import { BillItem, PaymentDetails } from "./types";
+import { calculateChange } from "@/components/utils/BillingUtils";
 
 interface CheckoutDialogProps {
   isOpen: boolean;
   onClose: () => void;
   billItems: BillItem[];
   totalAmount: number;
-  onCompletePayment: (paymentMethod: 'cash' | 'card' | 'upi', paymentDetails: any) => Promise<void>;
+  onCompletePayment: (method: 'cash' | 'card' | 'upi', details: PaymentDetails) => void;
   isProcessing: boolean;
 }
 
@@ -27,141 +27,146 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
   isProcessing
 }) => {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi'>('cash');
-  const [amountPaid, setAmountPaid] = useState<string>(totalAmount.toFixed(2));
-  const [changeAmount, setChangeAmount] = useState<number>(0);
-  const [cardNumber, setCardNumber] = useState<string>('');
-  const [upiId, setUpiId] = useState<string>('');
-
-  const handleAmountPaidChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setAmountPaid(value);
-    
-    const numericValue = parseFloat(value) || 0;
-    const change = calculateChange(totalAmount, numericValue);
-    setChangeAmount(change);
-  };
-
-  const handleCompletePayment = async () => {
-    // Validate based on payment method
-    if (paymentMethod === 'cash') {
-      const numericValue = parseFloat(amountPaid) || 0;
-      if (numericValue < totalAmount) {
-        toast.error('Amount paid must be at least the total amount');
-        return;
-      }
-    } else if (paymentMethod === 'card') {
-      if (cardNumber.length < 4) {
-        toast.error('Please enter last 4 digits of the card');
-        return;
-      }
-    } else if (paymentMethod === 'upi') {
-      if (!upiId || !upiId.includes('@')) {
-        toast.error('Please enter a valid UPI ID');
-        return;
-      }
+  const [cashAmount, setCashAmount] = useState<string>(totalAmount.toFixed(2));
+  const [cardReference, setCardReference] = useState<string>('');
+  const [upiReference, setUpiReference] = useState<string>('');
+  
+  const handleCashPayment = () => {
+    const amountPaid = parseFloat(cashAmount) || 0;
+    if (amountPaid < totalAmount) {
+      alert('Cash amount must be equal to or greater than the total amount');
+      return;
     }
-
-    // Prepare payment details
-    const paymentDetails = {
-      method: paymentMethod,
-      amountPaid: parseFloat(amountPaid) || totalAmount,
-      changeAmount: changeAmount,
-      reference: paymentMethod === 'card' ? cardNumber : paymentMethod === 'upi' ? upiId : undefined
+    
+    const paymentDetails: PaymentDetails = {
+      method: 'cash',
+      amountPaid,
+      changeAmount: calculateChange(totalAmount, amountPaid)
     };
-
-    // Complete payment
-    await onCompletePayment(paymentMethod, paymentDetails);
+    
+    onCompletePayment('cash', paymentDetails);
+  };
+  
+  const handleCardPayment = () => {
+    if (!cardReference) {
+      alert('Please enter the card transaction reference');
+      return;
+    }
+    
+    const paymentDetails: PaymentDetails = {
+      method: 'card',
+      reference: cardReference
+    };
+    
+    onCompletePayment('card', paymentDetails);
+  };
+  
+  const handleUpiPayment = () => {
+    if (!upiReference) {
+      alert('Please enter the UPI transaction reference');
+      return;
+    }
+    
+    const paymentDetails: PaymentDetails = {
+      method: 'upi',
+      reference: upiReference
+    };
+    
+    onCompletePayment('upi', paymentDetails);
+  };
+  
+  const handlePayment = () => {
+    switch (paymentMethod) {
+      case 'cash':
+        handleCashPayment();
+        break;
+      case 'card':
+        handleCardPayment();
+        break;
+      case 'upi':
+        handleUpiPayment();
+        break;
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Complete Payment</DialogTitle>
-          <DialogDescription>
-            Select a payment method to finalize the bill.
-          </DialogDescription>
+          <DialogTitle>Payment</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
-          <div className="flex justify-between text-lg">
+        <div className="space-y-4 py-2">
+          <div className="flex justify-between font-medium">
             <span>Total Amount:</span>
-            <span className="font-bold">${totalAmount.toFixed(2)}</span>
+            <span>${totalAmount.toFixed(2)}</span>
           </div>
           
-          <Tabs defaultValue="cash" onValueChange={(value) => setPaymentMethod(value as 'cash' | 'card' | 'upi')}>
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs defaultValue="cash" onValueChange={(val) => setPaymentMethod(val as 'cash' | 'card' | 'upi')}>
+            <TabsList className="grid grid-cols-3 mb-4">
               <TabsTrigger value="cash">Cash</TabsTrigger>
               <TabsTrigger value="card">Card</TabsTrigger>
               <TabsTrigger value="upi">UPI</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="cash" className="space-y-4 pt-4">
+            <TabsContent value="cash" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="amount-paid">Amount Received</Label>
-                <Input 
-                  id="amount-paid"
-                  type="number" 
+                <Label htmlFor="cashAmount">Cash Amount</Label>
+                <Input
+                  id="cashAmount"
+                  type="number"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
                   step="0.01"
-                  value={amountPaid}
-                  onChange={handleAmountPaidChange}
+                  min={totalAmount}
                 />
               </div>
               
-              <div className="flex justify-between p-3 border rounded-md bg-muted/30">
-                <span>Change to Return:</span>
-                <span className="font-bold">${changeAmount.toFixed(2)}</span>
+              {parseFloat(cashAmount) > totalAmount && (
+                <div className="flex justify-between pt-2 border-t">
+                  <span>Change:</span>
+                  <span>${(parseFloat(cashAmount) - totalAmount).toFixed(2)}</span>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="card" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="cardRef">Card Reference Number</Label>
+                <Input
+                  id="cardRef"
+                  value={cardReference}
+                  onChange={(e) => setCardReference(e.target.value)}
+                  placeholder="Card transaction reference"
+                />
               </div>
             </TabsContent>
             
-            <TabsContent value="card" className="space-y-4 pt-4">
+            <TabsContent value="upi" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="card-number">Last 4 Digits</Label>
-                <Input 
-                  id="card-number"
-                  maxLength={4}
-                  placeholder="1234"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                <Label htmlFor="upiRef">UPI Reference ID</Label>
+                <Input
+                  id="upiRef"
+                  value={upiReference}
+                  onChange={(e) => setUpiReference(e.target.value)}
+                  placeholder="UPI transaction ID"
                 />
-              </div>
-              <div className="text-center text-sm text-muted-foreground">
-                <CreditCard className="h-8 w-8 mx-auto mb-2" />
-                Process the card payment using your POS terminal
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="upi" className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="upi-id">UPI ID</Label>
-                <Input 
-                  id="upi-id"
-                  placeholder="name@bank"
-                  value={upiId}
-                  onChange={(e) => setUpiId(e.target.value)}
-                />
-              </div>
-              <div className="text-center text-sm text-muted-foreground">
-                <QrCode className="h-8 w-8 mx-auto mb-2" />
-                Have customer scan your payment QR code or enter their UPI ID
               </div>
             </TabsContent>
           </Tabs>
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="sm:justify-start">
+          <Button onClick={onClose} variant="outline">Cancel</Button>
           <Button 
-            variant="outline" 
-            onClick={onClose}
+            onClick={handlePayment} 
             disabled={isProcessing}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleCompletePayment} 
-            disabled={isProcessing}
+            className="relative"
           >
             {isProcessing ? 'Processing...' : 'Complete Payment'}
+            {paymentMethod === 'cash' && <Cash className="ml-2 h-4 w-4" />}
+            {paymentMethod === 'card' && <CreditCard className="ml-2 h-4 w-4" />}
+            {paymentMethod === 'upi' && <Check className="ml-2 h-4 w-4" />}
           </Button>
         </DialogFooter>
       </DialogContent>

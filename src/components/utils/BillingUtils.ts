@@ -1,32 +1,7 @@
+
 import { Json } from "@/integrations/supabase/types";
+import { BillItem, Product, PaymentDetails, Transaction } from "@/components/billing/types";
 import { UnitType, formatQuantityWithUnit } from "./UnitUtils";
-
-export interface BillItem {
-  productId: string;
-  name: string;
-  price: number;
-  quantity: number;
-  unitType?: UnitType;
-  barcode?: string;
-}
-
-export interface Product {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
-  category: string;
-  sku: string | null;
-  unitType?: UnitType;
-  barcode?: string;
-}
-
-export interface PaymentDetails {
-  method: 'cash' | 'card' | 'upi';
-  amountPaid?: number;
-  changeAmount?: number;
-  reference?: string;
-}
 
 export const addToBill = (
   product: Product, 
@@ -206,7 +181,9 @@ export const parseTransactionItems = (items: Json): BillItem[] => {
           productId: objItem?.productId || objItem?.product_id || '',
           name: objItem?.name || '',
           price: typeof objItem?.price === 'number' ? objItem.price : 0,
-          quantity: typeof objItem?.quantity === 'number' ? objItem.quantity : 0
+          quantity: typeof objItem?.quantity === 'number' ? objItem.quantity : 0,
+          unitType: objItem?.unitType as UnitType | undefined,
+          barcode: objItem?.barcode
         };
       });
     }
@@ -235,6 +212,3 @@ export const formatPaymentMethod = (method: string) => {
 export const calculateChange = (totalAmount: number, amountPaid: number): number => {
   return Math.max(0, amountPaid - totalAmount);
 };
-
-// Export the UnitType but reference the formatQuantityWithUnit function from UnitUtils
-export type { UnitType };
