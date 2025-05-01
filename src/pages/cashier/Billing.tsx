@@ -56,11 +56,20 @@ interface Transaction {
   amount: number;
   items: BillItem[];
   payment_method: string;
-  payment_details?: {
-    amountPaid?: number;
-    changeAmount?: number;
-    reference?: string;
-  };
+  payment_details?: PaymentDetails;
+}
+
+// Define a type for the Supabase transaction response
+interface TransactionResponse {
+  id: string;
+  transaction_id: string;
+  created_at: string;
+  amount: number;
+  items: any;
+  payment_method: string;
+  payment_details?: any;
+  cashier_id: string;
+  shop_id: string;
 }
 
 const Billing = () => {
@@ -213,15 +222,15 @@ const Billing = () => {
       
       if (data) {
         // Type safety for the returned data
-        const typedTransactions: Transaction[] = data.map(transaction => ({
+        const typedTransactions: Transaction[] = data.map((transaction: TransactionResponse) => ({
           id: transaction.id,
           transaction_id: transaction.transaction_id,
           created_at: transaction.created_at,
           amount: transaction.amount,
           items: parseTransactionItems(transaction.items),
           payment_method: transaction.payment_method,
-          // Cast payment_details to the expected type
-          payment_details: transaction.payment_details as Transaction['payment_details'] || undefined
+          // Cast payment_details to the expected type, handling undefined case
+          payment_details: transaction.payment_details as PaymentDetails | undefined
         }));
         
         setRecentTransactions(typedTransactions);
@@ -370,7 +379,7 @@ const Billing = () => {
           amount: transactionResult.amount,
           items: parseTransactionItems(transactionResult.items),
           payment_method: transactionResult.payment_method,
-          payment_details: transactionResult.payment_details as Transaction['payment_details'] || undefined
+          payment_details: transactionResult.payment_details as PaymentDetails | undefined
         };
         
         setReceiptData(transaction);
