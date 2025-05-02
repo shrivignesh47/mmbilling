@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +24,8 @@ interface Product {
   unitType?: string;
   sales_count: number;
   created_at: string;
+  shop_id: string;
+  updated_at: string;
 }
 
 const Products = () => {

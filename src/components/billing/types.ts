@@ -21,6 +21,9 @@ export interface Product {
   barcode?: string;
   unitType?: UnitType;
   sales_count?: number;
+  shop_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface PaymentDetails {
