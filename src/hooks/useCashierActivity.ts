@@ -13,7 +13,8 @@ interface CashierActivity {
   daily_transactions: number;
 }
 
-type TransactionEvent = {
+// Define a specific transaction type for auth events
+interface TransactionAuthEvent {
   created_at: string;
 }
 
@@ -56,7 +57,7 @@ export const useCashierActivity = (shopId: string | undefined) => {
             // We'll query the transactions table where we're storing auth events
             const { data: loginEvents, error: loginError } = await supabase
               .from('transactions')
-              .select<string, TransactionEvent>('created_at')
+              .select('created_at')
               .eq('user_id', cashier.id)
               .eq('event_type', 'login')
               .order('created_at', { ascending: false })
@@ -64,7 +65,7 @@ export const useCashierActivity = (shopId: string | undefined) => {
               
             const { data: logoutEvents, error: logoutError } = await supabase
               .from('transactions')
-              .select<string, TransactionEvent>('created_at')
+              .select('created_at')
               .eq('user_id', cashier.id)
               .eq('event_type', 'logout')
               .order('created_at', { ascending: false })
