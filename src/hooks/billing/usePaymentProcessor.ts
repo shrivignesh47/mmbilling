@@ -45,7 +45,7 @@ export const usePaymentProcessor = ({
       // Generate a transaction ID
       const transactionId = `INV-${Date.now().toString().slice(-8)}`;
 
-      // Create the transaction record
+      // Create the transaction record - store payment details as a stringified JSON
       const transactionData = {
         shop_id: profile.shop_id,
         cashier_id: profile.id,
@@ -53,12 +53,16 @@ export const usePaymentProcessor = ({
         amount: getTotalAmount(billItems),
         items: billItemsToJson(billItems),
         payment_method: paymentMethod,
-        payment_details: paymentDetails || {}
+        // Store payment details as a string since payment_details column doesn't exist
+        payment_details: JSON.stringify(paymentDetails || {})
       };
+
+      // Remove payment_details from the actual insert since the column doesn't exist
+      const { payment_details, ...dataToInsert } = transactionData;
 
       const { data: transactionResult, error: transactionError } = await supabase
         .from("transactions")
-        .insert(transactionData)
+        .insert(dataToInsert)
         .select()
         .single();
 
@@ -89,7 +93,7 @@ export const usePaymentProcessor = ({
           amount: transactionResult.amount,
           items: parseTransactionItems(transactionResult.items),
           payment_method: transactionResult.payment_method,
-          payment_details: paymentDetails || {}
+          payment_details: paymentDetails || {} // Use the paymentDetails from the function parameter
         };
         
         setReceiptData(transaction);

@@ -56,10 +56,33 @@ export const useCashierActivity = (shopId: string | undefined) => {
         const cashiersWithActivity: CashierActivity[] = await Promise.all(
           cashierData.map(async (cashier) => {
             // Get authentication logs (for login/logout)
-            // Since auth_events isn't directly accessible via supabase client,
-            // we'll mock this data for now and suggest implementing a proper tracking mechanism
+            // We'll query the transactions table where we're storing auth events
+            const { data: loginEvents, error: loginError } = await supabase
+              .from('transactions')
+              .select('created_at')
+              .eq('user_id', cashier.id)
+              .eq('event_type', 'login')
+              .order('created_at', { ascending: false })
+              .limit(1);
+              
+            const { data: logoutEvents, error: logoutError } = await supabase
+              .from('transactions')
+              .select('created_at')
+              .eq('user_id', cashier.id)
+              .eq('event_type', 'logout')
+              .order('created_at', { ascending: false })
+              .limit(1);
+              
             let last_login = null;
             let last_logout = null;
+            
+            if (!loginError && loginEvents && loginEvents.length > 0) {
+              last_login = loginEvents[0].created_at;
+            }
+            
+            if (!logoutError && logoutEvents && logoutEvents.length > 0) {
+              last_logout = logoutEvents[0].created_at;
+            }
             
             // Get daily sales data
             const { data: transactions, error: txError } = await supabase

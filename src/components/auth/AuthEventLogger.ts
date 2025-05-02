@@ -10,7 +10,7 @@ export const logAuthEvent = async (
   if (!userId) return;
   
   try {
-    // Use transactions table instead of auth_events since it exists in the schema
+    // Use transactions table with event_type field to track auth events
     await supabase
       .from('transactions')
       .insert({
@@ -22,6 +22,8 @@ export const logAuthEvent = async (
         amount: 0, // Not applicable for auth events
         payment_method: 'system' // Not applicable for auth events
       });
+      
+    console.log(`Auth event ${event} logged for user ${userId}`);
   } catch (error) {
     console.error('Failed to log auth event:', error);
   }
