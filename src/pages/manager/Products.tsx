@@ -20,7 +20,7 @@ interface Product {
   category: string;
   price: number;
   stock: number;
-  sku: string;
+  sku: string | null;
   barcode?: string;
   unitType?: string;
   sales_count: number;
