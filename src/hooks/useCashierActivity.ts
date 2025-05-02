@@ -61,7 +61,7 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .eq('user_id', cashier.id)
               .eq('event_type', 'login')
               .order('created_at', { ascending: false })
-              .limit(1);
+              .limit(1) as { data: TransactionAuthEvent[] | null, error: any };
               
             const { data: logoutEvents, error: logoutError } = await supabase
               .from('transactions')
@@ -69,7 +69,7 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .eq('user_id', cashier.id)
               .eq('event_type', 'logout')
               .order('created_at', { ascending: false })
-              .limit(1);
+              .limit(1) as { data: TransactionAuthEvent[] | null, error: any };
               
             let last_login = null;
             let last_logout = null;
