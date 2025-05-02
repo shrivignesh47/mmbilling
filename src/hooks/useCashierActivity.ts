@@ -57,30 +57,30 @@ export const useCashierActivity = (shopId: string | undefined) => {
         // Fetch activity data for all cashiers
         const cashiersWithActivity: CashierActivity[] = await Promise.all(
           cashierData.map(async (cashier) => {
-            // Get login events - avoid complex type resolution
-            const loginQuery = await supabase
+            // Get login events - using plain function without chaining to avoid deep type inference
+            const loginResult = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
               .eq('event_type', 'login')
               .order('created_at', { ascending: false })
               .limit(1);
-            
-            const loginData = loginQuery.data as TransactionAuthEvent[] | null;
-            const loginError = loginQuery.error;
               
-            // Get logout events - avoid complex type resolution
-            const logoutQuery = await supabase
+            const loginData = loginResult.data as TransactionAuthEvent[] | null;
+            const loginError = loginResult.error;
+            
+            // Get logout events - using plain function without chaining to avoid deep type inference
+            const logoutResult = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
               .eq('event_type', 'logout')
               .order('created_at', { ascending: false })
               .limit(1);
-            
-            const logoutData = logoutQuery.data as TransactionAuthEvent[] | null;
-            const logoutError = logoutQuery.error;
               
+            const logoutData = logoutResult.data as TransactionAuthEvent[] | null;
+            const logoutError = logoutResult.error;
+            
             let last_login = null;
             let last_logout = null;
             
@@ -92,16 +92,16 @@ export const useCashierActivity = (shopId: string | undefined) => {
               last_logout = logoutData[0].created_at;
             }
             
-            // Get daily sales data - avoid complex type resolution
-            const txQuery = await supabase
+            // Get daily sales data - using plain function without chaining to avoid deep type inference
+            const txResult = await supabase
               .from('transactions')
               .select('amount')
               .eq('cashier_id', cashier.id)
               .eq('shop_id', shopId)
               .gte('created_at', today.toISOString());
-            
-            const txData = txQuery.data as TransactionAmount[] | null;
-            const txError = txQuery.error;
+              
+            const txData = txResult.data as TransactionAmount[] | null;
+            const txError = txResult.error;
             
             let daily_sales = 0;
             let daily_transactions = 0;
