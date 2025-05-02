@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { billItemsToJson } from "@/components/utils/BillingUtils";
 
 // Implementation of inventory functions
-export const updateProductStock = async (billItems: BillItem[]) => {
+export const updateProductStockInternal = async (billItems: BillItem[]) => {
   for (const item of billItems) {
     try {
       // Find the product
@@ -32,7 +32,7 @@ export const updateProductStock = async (billItems: BillItem[]) => {
   }
 };
 
-export const logInventoryChange = async (billItems: BillItem[], shopId: string, transactionId: string) => {
+export const logInventoryChangeInternal = async (billItems: BillItem[], shopId: string, transactionId: string) => {
   try {
     const inventoryLogs = billItems.map(item => ({
       product_id: item.productId,
@@ -107,11 +107,11 @@ export const usePaymentProcessor = ({
       }
       
       // Update product stock levels
-      await updateProductStock(billItems);
+      await updateProductStockInternal(billItems);
       
       // Log inventory changes
       if (profile?.shop_id) {
-        await logInventoryChange(billItems, profile.shop_id, transactionId);
+        await logInventoryChangeInternal(billItems, profile.shop_id, transactionId);
       }
       
       // Close checkout dialog

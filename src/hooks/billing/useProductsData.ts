@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Product } from "@/components/billing/types";
-import { UnitType } from "@/components/utils/UnitUtils";
+import { UnitType, getCategoryUnitType } from "@/components/utils/UnitUtils";
 
 export const useProductsData = (
   profile: any, 
@@ -69,17 +69,10 @@ export const useProductsData = (
           // Generate barcode for each product if not already present
           const barcode = product.sku || `PROD-${product.id.slice(-8).toUpperCase()}`;
           
-          // Determine unit type based on category
-          let unitType: UnitType = 'piece';
-          if (product.category) {
-            const category = product.category.toLowerCase();
-            if (category.includes('vegetable') || category.includes('fruit') || category.includes('produce')) {
-              unitType = 'kg';
-            } else if (category.includes('milk') || category.includes('juice') || category.includes('liquid') || category.includes('beverage')) {
-              unitType = 'liter';
-            } else if (category.includes('pack') || category.includes('bundle')) {
-              unitType = 'pack';
-            }
+          // Determine unit type based on stored value or category
+          let unitType: UnitType = (product.unitType as UnitType) || 'piece';
+          if (!product.unitType) {
+            unitType = getCategoryUnitType(product.category);
           }
           
           return {

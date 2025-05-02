@@ -28,17 +28,15 @@ export const useCashierActivity = (shopId: string | undefined) => {
       setIsLoading(true);
       try {
         // Fetch all cashiers for this shop
-        const cashierResponse = await supabase
+        const { data: cashierData, error: cashierError } = await supabase
           .from('profiles')
           .select('id, name, email, shop_id')
           .eq('shop_id', shopId)
           .eq('role', 'cashier');
           
-        if (cashierResponse.error) throw cashierResponse.error;
+        if (cashierError) throw cashierError;
         
-        const cashierData = cashierResponse.data || [];
-        
-        if (cashierData.length === 0) {
+        if (!cashierData || cashierData.length === 0) {
           setCashiers([]);
           setIsLoading(false);
           return;
@@ -48,11 +46,12 @@ export const useCashierActivity = (shopId: string | undefined) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // Process each cashier individually to avoid deep type inference
-        const cashierActivityData: CashierActivity[] = [];
+        // Create an array to store all cashier activity
+        const cashiersActivityData: CashierActivity[] = [];
         
+        // Process each cashier individually to avoid deep type inference issues
         for (const cashier of cashierData) {
-          // Initialize cashier activity object
+          // Initialize cashier activity object with default values
           const cashierActivity: CashierActivity = {
             id: cashier.id,
             name: cashier.name,
@@ -63,9 +62,9 @@ export const useCashierActivity = (shopId: string | undefined) => {
             daily_transactions: 0
           };
           
-          // Handle login events
           try {
-            const loginResult = await supabase
+            // Get login events - simplified query
+            const { data: loginData } = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
@@ -73,16 +72,16 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .order('created_at', { ascending: false })
               .limit(1);
               
-            if (loginResult.data && loginResult.data.length > 0) {
-              cashierActivity.last_login = loginResult.data[0].created_at;
+            if (loginData && loginData.length > 0) {
+              cashierActivity.last_login = loginData[0].created_at;
             }
           } catch (err) {
             console.error('Error fetching login data:', err);
           }
           
-          // Handle logout events
           try {
-            const logoutResult = await supabase
+            // Get logout events - simplified query
+            const { data: logoutData } = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
@@ -90,36 +89,36 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .order('created_at', { ascending: false })
               .limit(1);
               
-            if (logoutResult.data && logoutResult.data.length > 0) {
-              cashierActivity.last_logout = logoutResult.data[0].created_at;
+            if (logoutData && logoutData.length > 0) {
+              cashierActivity.last_logout = logoutData[0].created_at;
             }
           } catch (err) {
             console.error('Error fetching logout data:', err);
           }
           
-          // Handle transactions
           try {
-            const txResult = await supabase
+            // Get daily sales transactions - simplified query
+            const { data: txData } = await supabase
               .from('transactions')
               .select('amount')
               .eq('cashier_id', cashier.id)
               .eq('shop_id', shopId)
               .gte('created_at', today.toISOString());
               
-            if (txResult.data) {
-              cashierActivity.daily_sales = txResult.data.reduce((sum, tx) => sum + Number(tx.amount), 0);
-              cashierActivity.daily_transactions = txResult.data.length;
+            if (txData) {
+              cashierActivity.daily_sales = txData.reduce((sum, tx) => sum + Number(tx.amount), 0);
+              cashierActivity.daily_transactions = txData.length;
             }
           } catch (err) {
             console.error('Error fetching transaction data:', err);
           }
           
-          // Add cashier activity to the array
-          cashierActivityData.push(cashierActivity);
+          // Add cashier activity to the results array
+          cashiersActivityData.push(cashierActivity);
         }
         
         // Update state with all cashier activity data
-        setCashiers(cashierActivityData);
+        setCashiers(cashiersActivityData);
       } catch (error) {
         console.error('Error fetching cashier activity:', error);
         toast.error('Failed to load cashier activity data');
