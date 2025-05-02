@@ -18,6 +18,12 @@ interface TransactionAuthEvent {
   created_at: string;
 }
 
+// Define response types to avoid excessive type instantiations
+interface SupabaseResponse<T> {
+  data: T | null;
+  error: any;
+}
+
 export const useCashierActivity = (shopId: string | undefined) => {
   const [cashiers, setCashiers] = useState<CashierActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,21 +61,27 @@ export const useCashierActivity = (shopId: string | undefined) => {
           cashierData.map(async (cashier) => {
             // Get authentication logs (for login/logout)
             // We'll query the transactions table where we're storing auth events
-            const { data: loginEvents, error: loginError } = await supabase
+            const loginQuery = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
               .eq('event_type', 'login')
               .order('created_at', { ascending: false })
-              .limit(1) as { data: TransactionAuthEvent[] | null, error: any };
+              .limit(1);
               
-            const { data: logoutEvents, error: logoutError } = await supabase
+            const loginEvents = loginQuery.data as TransactionAuthEvent[] | null;
+            const loginError = loginQuery.error;
+              
+            const logoutQuery = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
               .eq('event_type', 'logout')
               .order('created_at', { ascending: false })
-              .limit(1) as { data: TransactionAuthEvent[] | null, error: any };
+              .limit(1);
+              
+            const logoutEvents = logoutQuery.data as TransactionAuthEvent[] | null;
+            const logoutError = logoutQuery.error;
               
             let last_login = null;
             let last_logout = null;
@@ -83,13 +95,16 @@ export const useCashierActivity = (shopId: string | undefined) => {
             }
             
             // Get daily sales data
-            const { data: transactions, error: txError } = await supabase
+            const txQuery = await supabase
               .from('transactions')
               .select('amount')
               .eq('cashier_id', cashier.id)
               .eq('shop_id', shopId)
               .gte('created_at', today.toISOString());
               
+            const transactions = txQuery.data;
+            const txError = txQuery.error;
+            
             let daily_sales = 0;
             let daily_transactions = 0;
             
