@@ -70,8 +70,16 @@ export const useProductsData = (
           const barcode = product.sku || `PROD-${product.id.slice(-8).toUpperCase()}`;
           
           // Determine unit type based on stored value or category
-          let unitType: UnitType = (product.unitType as UnitType) || 'piece';
-          if (!product.unitType) {
+          // Handle the case where unitType might not exist in the database
+          let unitType: UnitType = 'piece';
+          if (typeof product.unitType === 'string' && product.unitType) {
+            // Check if the unitType from database is valid
+            const validUnitTypes: UnitType[] = ['kg', 'liter', 'piece', 'pack', 'ml', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
+            if (validUnitTypes.includes(product.unitType as UnitType)) {
+              unitType = product.unitType as UnitType;
+            }
+          } else {
+            // Use category to determine unit type
             unitType = getCategoryUnitType(product.category);
           }
           
@@ -83,7 +91,8 @@ export const useProductsData = (
             category: product.category || '',
             sku: product.sku || '',
             barcode,
-            unitType
+            unitType,
+            sales_count: product.sales_count || 0
           };
         });
         

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { exportBarcodesToExcel, generateBarcode } from "@/components/utils/BarcodeGeneratorUtils";
+import { UnitType } from "@/components/utils/UnitUtils";
 
 // Import our refactored components
 import ProductsHeader from "@/components/products/ProductsHeader";
@@ -21,7 +22,7 @@ interface Product {
   stock: number;
   sku: string | null;
   barcode: string; // Explicitly add barcode property as required
-  unitType?: string;
+  unitType?: UnitType;
   sales_count: number;
   created_at: string;
   shop_id: string;
@@ -226,7 +227,7 @@ const Products = () => {
             price: formData.price,
             stock: formData.stock,
             sku: formData.sku,
-            barcode: formData.barcode
+            unitType: formData.unitType
           })
           .eq("id", selectedProduct.id);
         

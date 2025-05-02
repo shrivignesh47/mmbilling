@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -73,11 +72,15 @@ const ProductForm: React.FC<ProductFormProps> = ({
     });
   };
 
-  const handleUnitTypeChange = (value: UnitType) => {
-    setFormData({
-      ...formData,
-      unitType: value
-    });
+  const handleUnitTypeChange = (value: string) => {
+    // Validate that the value is a valid UnitType
+    const validUnitTypes: UnitType[] = ['kg', 'liter', 'piece', 'pack', 'ml', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
+    if (validUnitTypes.includes(value as UnitType)) {
+      setFormData({
+        ...formData,
+        unitType: value as UnitType
+      });
+    }
   };
 
   const handleCategoryChange = (value: string) => {
