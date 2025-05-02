@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +21,21 @@ interface Product {
   stock: number;
   sku: string | null;
   barcode: string; // Explicitly add barcode property as required
+  unitType?: string;
+  sales_count: number;
+  created_at: string;
+  shop_id: string;
+  updated_at: string;
+}
+
+// Define the database product type (without barcode) to match what comes from Supabase
+interface DatabaseProduct {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  stock: number;
+  sku: string | null;
   unitType?: string;
   sales_count: number;
   created_at: string;
@@ -69,9 +83,10 @@ const Products = () => {
       if (error) throw error;
       
       // Add barcode to each product if not already present
-      const productsWithBarcodes = (data || []).map(product => ({
+      // Type assertion to handle the conversion from DatabaseProduct to Product
+      const productsWithBarcodes = (data || []).map((product: DatabaseProduct) => ({
         ...product,
-        barcode: product.barcode || generateBarcode(product)
+        barcode: generateBarcode(product)
       }));
       
       setProducts(productsWithBarcodes);
