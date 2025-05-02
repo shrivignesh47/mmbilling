@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Define interfaces for easier type handling
 interface CashierActivity {
   id: string;
   name: string | null;
@@ -62,7 +63,7 @@ export const useCashierActivity = (shopId: string | undefined) => {
             daily_transactions: 0
           };
           
-          // Handle login events in a separate try-catch block
+          // Handle login events
           try {
             const loginResult = await supabase
               .from('transactions')
@@ -72,7 +73,6 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .order('created_at', { ascending: false })
               .limit(1);
               
-            // Extract data safely after the query is complete
             if (loginResult.data && loginResult.data.length > 0) {
               cashierActivity.last_login = loginResult.data[0].created_at;
             }
@@ -80,7 +80,7 @@ export const useCashierActivity = (shopId: string | undefined) => {
             console.error('Error fetching login data:', err);
           }
           
-          // Handle logout events in a separate try-catch block
+          // Handle logout events
           try {
             const logoutResult = await supabase
               .from('transactions')
@@ -90,7 +90,6 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .order('created_at', { ascending: false })
               .limit(1);
               
-            // Extract data safely after the query is complete
             if (logoutResult.data && logoutResult.data.length > 0) {
               cashierActivity.last_logout = logoutResult.data[0].created_at;
             }
@@ -98,7 +97,7 @@ export const useCashierActivity = (shopId: string | undefined) => {
             console.error('Error fetching logout data:', err);
           }
           
-          // Handle transactions in a separate try-catch block
+          // Handle transactions
           try {
             const txResult = await supabase
               .from('transactions')
@@ -107,7 +106,6 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .eq('shop_id', shopId)
               .gte('created_at', today.toISOString());
               
-            // Process transaction data
             if (txResult.data) {
               cashierActivity.daily_sales = txResult.data.reduce((sum, tx) => sum + Number(tx.amount), 0);
               cashierActivity.daily_transactions = txResult.data.length;

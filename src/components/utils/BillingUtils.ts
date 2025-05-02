@@ -1,4 +1,3 @@
-
 import { Json } from "@/integrations/supabase/types";
 import { BillItem, Product, PaymentDetails, Transaction } from "@/components/billing/types";
 import { UnitType, formatQuantityWithUnit } from "./UnitUtils";
@@ -153,7 +152,17 @@ export const downloadReceipt = (
 };
 
 export const billItemsToJson = (items: BillItem[]): Json => {
-  return items as unknown as Json;
+  // Create a JSON-serializable copy of the items
+  const jsonSafe = items.map(item => ({
+    productId: item.productId,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity,
+    unitType: item.unitType || 'piece',
+    barcode: item.barcode
+  }));
+  
+  return jsonSafe as unknown as Json;
 };
 
 export const parseTransactionItems = (items: Json): BillItem[] => {
