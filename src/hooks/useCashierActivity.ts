@@ -22,12 +22,6 @@ interface TransactionAmount {
   amount: number;
 }
 
-// Define a simple type for Supabase query responses to avoid deep type inference
-interface QueryResponse<T> {
-  data: T[] | null;
-  error: Error | null;
-}
-
 export const useCashierActivity = (shopId: string | undefined) => {
   const [cashiers, setCashiers] = useState<CashierActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,12 +57,13 @@ export const useCashierActivity = (shopId: string | undefined) => {
         // Fetch activity data for all cashiers
         const cashiersWithActivity: CashierActivity[] = await Promise.all(
           cashierData.map(async (cashier) => {
-            // Get login events
-            const loginResponse: QueryResponse<TransactionAuthEvent> = {
-              data: null,
-              error: null
-            };
+            // Get login events using a simpler approach to avoid deep type inference
+            let last_login = null;
+            let last_logout = null;
+            let daily_sales = 0;
+            let daily_transactions = 0;
             
+            // Login query - store as a simple variable first
             const loginQuery = await supabase
               .from('transactions')
               .select('created_at')
@@ -76,16 +71,13 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .eq('event_type', 'login')
               .order('created_at', { ascending: false })
               .limit(1);
-              
-            loginResponse.data = loginQuery.data as TransactionAuthEvent[] | null;
-            loginResponse.error = loginQuery.error;
             
-            // Get logout events
-            const logoutResponse: QueryResponse<TransactionAuthEvent> = {
-              data: null,
-              error: null
-            };
+            // Type assertion without complex chains
+            if (!loginQuery.error && loginQuery.data && loginQuery.data.length > 0) {
+              last_login = loginQuery.data[0].created_at;
+            }
             
+            // Logout query - store as a simple variable first
             const logoutQuery = await supabase
               .from('transactions')
               .select('created_at')
@@ -93,43 +85,24 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .eq('event_type', 'logout')
               .order('created_at', { ascending: false })
               .limit(1);
-              
-            logoutResponse.data = logoutQuery.data as TransactionAuthEvent[] | null;
-            logoutResponse.error = logoutQuery.error;
             
-            let last_login = null;
-            let last_logout = null;
-            
-            if (!loginResponse.error && loginResponse.data && loginResponse.data.length > 0) {
-              last_login = loginResponse.data[0].created_at;
+            // Type assertion without complex chains
+            if (!logoutQuery.error && logoutQuery.data && logoutQuery.data.length > 0) {
+              last_logout = logoutQuery.data[0].created_at;
             }
             
-            if (!logoutResponse.error && logoutResponse.data && logoutResponse.data.length > 0) {
-              last_logout = logoutResponse.data[0].created_at;
-            }
-            
-            // Get daily sales data
-            const txResponse: QueryResponse<TransactionAmount> = {
-              data: null,
-              error: null
-            };
-            
+            // Transactions query
             const txQuery = await supabase
               .from('transactions')
               .select('amount')
               .eq('cashier_id', cashier.id)
               .eq('shop_id', shopId)
               .gte('created_at', today.toISOString());
-              
-            txResponse.data = txQuery.data as TransactionAmount[] | null;
-            txResponse.error = txQuery.error;
             
-            let daily_sales = 0;
-            let daily_transactions = 0;
-            
-            if (!txResponse.error && txResponse.data) {
-              daily_sales = txResponse.data.reduce((sum, tx) => sum + Number(tx.amount), 0);
-              daily_transactions = txResponse.data.length;
+            // Type assertion without complex chains
+            if (!txQuery.error && txQuery.data) {
+              daily_sales = txQuery.data.reduce((sum, tx) => sum + Number(tx.amount), 0);
+              daily_transactions = txQuery.data.length;
             }
             
             return {
