@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +21,7 @@ interface Product {
   price: number;
   stock: number;
   sku: string | null;
-  barcode?: string;
+  barcode: string; // Explicitly add barcode property as required
   unitType?: string;
   sales_count: number;
   created_at: string;
