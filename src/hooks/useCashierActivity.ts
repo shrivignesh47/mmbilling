@@ -54,69 +54,76 @@ export const useCashierActivity = (shopId: string | undefined) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // Fetch activity data for all cashiers
-        const cashiersWithActivity: CashierActivity[] = await Promise.all(
-          cashierData.map(async (cashier) => {
-            // Get login events using a simpler approach to avoid deep type inference
-            let last_login = null;
-            let last_logout = null;
-            let daily_sales = 0;
-            let daily_transactions = 0;
-            
-            // Login query - store as a simple variable first
-            const loginQuery = await supabase
+        // Fetch activity data for all cashiers - avoiding deep type inference issues
+        const cashierPromises = cashierData.map(async (cashier) => {
+          let last_login: string | null = null;
+          let last_logout: string | null = null;
+          let daily_sales = 0;
+          let daily_transactions = 0;
+          
+          // Handle login events
+          try {
+            const { data: loginData, error: loginError } = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
               .eq('event_type', 'login')
               .order('created_at', { ascending: false })
               .limit(1);
-            
-            // Type assertion without complex chains
-            if (!loginQuery.error && loginQuery.data && loginQuery.data.length > 0) {
-              last_login = loginQuery.data[0].created_at;
+              
+            if (!loginError && loginData && loginData.length > 0) {
+              last_login = loginData[0].created_at;
             }
-            
-            // Logout query - store as a simple variable first
-            const logoutQuery = await supabase
+          } catch (err) {
+            console.error('Error fetching login data:', err);
+          }
+          
+          // Handle logout events
+          try {
+            const { data: logoutData, error: logoutError } = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
               .eq('event_type', 'logout')
               .order('created_at', { ascending: false })
               .limit(1);
-            
-            // Type assertion without complex chains
-            if (!logoutQuery.error && logoutQuery.data && logoutQuery.data.length > 0) {
-              last_logout = logoutQuery.data[0].created_at;
+              
+            if (!logoutError && logoutData && logoutData.length > 0) {
+              last_logout = logoutData[0].created_at;
             }
-            
-            // Transactions query
-            const txQuery = await supabase
+          } catch (err) {
+            console.error('Error fetching logout data:', err);
+          }
+          
+          // Handle transactions data
+          try {
+            const { data: txData, error: txError } = await supabase
               .from('transactions')
               .select('amount')
               .eq('cashier_id', cashier.id)
               .eq('shop_id', shopId)
               .gte('created_at', today.toISOString());
-            
-            // Type assertion without complex chains
-            if (!txQuery.error && txQuery.data) {
-              daily_sales = txQuery.data.reduce((sum, tx) => sum + Number(tx.amount), 0);
-              daily_transactions = txQuery.data.length;
+              
+            if (!txError && txData && txData.length > 0) {
+              daily_sales = txData.reduce((sum, tx) => sum + Number(tx.amount), 0);
+              daily_transactions = txData.length;
             }
-            
-            return {
-              id: cashier.id,
-              name: cashier.name,
-              email: cashier.email,
-              last_login,
-              last_logout,
-              daily_sales,
-              daily_transactions
-            };
-          })
-        );
+          } catch (err) {
+            console.error('Error fetching transaction data:', err);
+          }
+          
+          return {
+            id: cashier.id,
+            name: cashier.name,
+            email: cashier.email,
+            last_login,
+            last_logout,
+            daily_sales,
+            daily_transactions
+          };
+        });
         
+        const cashiersWithActivity = await Promise.all(cashierPromises);
         setCashiers(cashiersWithActivity);
       } catch (error) {
         console.error('Error fetching cashier activity:', error);
