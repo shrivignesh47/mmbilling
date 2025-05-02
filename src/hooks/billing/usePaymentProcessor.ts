@@ -1,72 +1,97 @@
 
-// Note: Creating this file to intercept payment processing and add stock reduction logic
+import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { BillItem, Transaction } from "@/components/billing/types";
+import { BillItem, PaymentDetails, Transaction } from "@/components/billing/types";
+import { toast } from "sonner";
+import { updateProductStock, logInventoryChange } from './usePaymentProcessor';
 
-// Function to update product stock after a successful transaction
-export const updateProductStock = async (items: BillItem[]) => {
-  // Process each item in the transaction
-  for (const item of items) {
-    try {
-      // Get the current stock for this product
-      const { data: productData, error: productError } = await supabase
-        .from('products')
-        .select('stock')
-        .eq('id', item.productId)
-        .single();
-      
-      if (productError || !productData) {
-        console.error(`Failed to retrieve stock for product ${item.productId}:`, productError);
-        continue;
-      }
-      
-      // Calculate new stock
-      const currentStock = productData.stock;
-      const newStock = Math.max(0, currentStock - item.quantity); // Ensure stock doesn't go below 0
-      
-      // Update the product stock
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({ stock: newStock })
-        .eq('id', item.productId);
-      
-      if (updateError) {
-        console.error(`Failed to update stock for product ${item.productId}:`, updateError);
-      } else {
-        console.log(`Updated stock for ${item.name} from ${currentStock} to ${newStock}`);
-      }
-      
-      // Update the sales count for the product
-      await supabase.rpc('increment_sales', { 
-        p_id: item.productId, 
-        amount: item.quantity 
-      });
-      
-    } catch (error) {
-      console.error(`Error updating stock for product ${item.productId}:`, error);
-    }
-  }
+// Renaming the existing functions to avoid name clashes
+export const updateProductStockAfterSale = updateProductStock;
+export const logInventoryChangeAfterSale = logInventoryChange;
+
+type UsePaymentProcessorProps = {
+  billItems: BillItem[];
+  profile: any;
+  setBillItems: React.Dispatch<React.SetStateAction<BillItem[]>>;
+  setIsCheckoutDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setReceiptData: React.Dispatch<React.SetStateAction<Transaction | null>>;
+  setIsReceiptDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsPaymentProcessing: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-// Track inventory changes for reporting
-export const logInventoryChange = async (
-  items: BillItem[],
-  shopId: string,
-  transactionId: string
-) => {
-  for (const item of items) {
-    try {
-      await supabase
-        .from('inventory_logs')
-        .insert({
-          product_id: item.productId,
-          product_name: item.name,
-          quantity: item.quantity,
-          action: 'sale',
-          shop_id: shopId
-        });
-    } catch (error) {
-      console.error(`Failed to log inventory change for ${item.name}:`, error);
+export const usePaymentProcessor = ({
+  billItems,
+  profile,
+  setBillItems,
+  setIsCheckoutDialogOpen,
+  setReceiptData,
+  setIsReceiptDialogOpen,
+  setIsPaymentProcessing
+}: UsePaymentProcessorProps) => {
+  const handleCheckout = async (method: 'cash' | 'card' | 'upi', paymentDetails: PaymentDetails) => {
+    if (billItems.length === 0) {
+      toast.error("No items in bill");
+      return;
     }
-  }
+    
+    setIsPaymentProcessing(true);
+    
+    try {
+      const totalAmount = billItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+      
+      // Generate a transaction ID
+      const transactionId = `tx-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      
+      // Insert transaction record
+      const { data: transactionData, error: transactionError } = await supabase
+        .from('transactions')
+        .insert({
+          transaction_id: transactionId,
+          amount: totalAmount,
+          items: billItems,
+          payment_method: method,
+          payment_details: paymentDetails,
+          cashier_id: profile?.id,
+          shop_id: profile?.shop_id
+        })
+        .select()
+        .single();
+      
+      if (transactionError) {
+        throw transactionError;
+      }
+      
+      // Update product stock levels
+      await updateProductStockAfterSale(billItems);
+      
+      // Log inventory changes
+      if (profile?.shop_id) {
+        await logInventoryChangeAfterSale(billItems, profile.shop_id, transactionId);
+      }
+      
+      // Close checkout dialog
+      setIsCheckoutDialogOpen(false);
+      
+      // Set receipt data for displaying receipt
+      setReceiptData(transactionData as unknown as Transaction);
+      
+      // Clear bill
+      setBillItems([]);
+      
+      // Show success message
+      toast.success("Payment successful!");
+      
+      // Open receipt dialog
+      setIsReceiptDialogOpen(true);
+    } catch (error: any) {
+      console.error("Error processing payment:", error);
+      toast.error(`Payment failed: ${error.message || "Unknown error"}`);
+    } finally {
+      setIsPaymentProcessing(false);
+    }
+  };
+  
+  return {
+    handleCheckout
+  };
 };
