@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Transaction, TransactionResponse } from "@/components/billing/types";
-import { Json } from "@/integrations/supabase/types";
 import { parseTransactionItems } from "@/components/utils/BillingUtils";
 
 export const useTransactionsData = (profile: any) => {
@@ -37,7 +36,7 @@ export const useTransactionsData = (profile: any) => {
           amount: transaction.amount,
           items: parseTransactionItems(transaction.items),
           payment_method: transaction.payment_method,
-          payment_details: {} // Default empty object for payment details
+          payment_details: transaction.payment_details || { method: transaction.payment_method } // Add default method value
         }));
         
         setRecentTransactions(typedTransactions);
