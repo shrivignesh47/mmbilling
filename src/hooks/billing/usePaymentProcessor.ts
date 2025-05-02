@@ -1,115 +1,72 @@
 
+// Note: Creating this file to intercept payment processing and add stock reduction logic
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { BillItem, Transaction } from "@/components/billing/types";
-import {
-  getTotalAmount,
-  billItemsToJson,
-  parseTransactionItems
-} from "@/components/utils/BillingUtils";
 
-interface PaymentProcessorProps {
-  billItems: BillItem[];
-  profile: any;
-  setBillItems: React.Dispatch<React.SetStateAction<BillItem[]>>;
-  setIsCheckoutDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setReceiptData: React.Dispatch<React.SetStateAction<Transaction | null>>;
-  setIsReceiptDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsPaymentProcessing: React.Dispatch<React.SetStateAction<boolean>>;
-}
-
-export const usePaymentProcessor = ({
-  billItems,
-  profile,
-  setBillItems,
-  setIsCheckoutDialogOpen,
-  setReceiptData,
-  setIsReceiptDialogOpen,
-  setIsPaymentProcessing
-}: PaymentProcessorProps) => {
-  
-  const handleCheckout = async (paymentMethod: 'cash' | 'card' | 'upi', paymentDetails: any) => {
-    if (billItems.length === 0) {
-      toast.error('Cannot checkout an empty bill');
-      return;
-    }
-
-    if (!profile?.shop_id) {
-      toast.error('Shop ID is required');
-      return;
-    }
-
-    setIsPaymentProcessing(true);
-
+// Function to update product stock after a successful transaction
+export const updateProductStock = async (items: BillItem[]) => {
+  // Process each item in the transaction
+  for (const item of items) {
     try {
-      // Generate a transaction ID
-      const transactionId = `INV-${Date.now().toString().slice(-8)}`;
-
-      // Create the transaction record - store payment details as a stringified JSON
-      const transactionData = {
-        shop_id: profile.shop_id,
-        cashier_id: profile.id,
-        transaction_id: transactionId,
-        amount: getTotalAmount(billItems),
-        items: billItemsToJson(billItems),
-        payment_method: paymentMethod,
-        // Store payment details as a string since payment_details column doesn't exist
-        payment_details: JSON.stringify(paymentDetails || {})
-      };
-
-      // Remove payment_details from the actual insert since the column doesn't exist
-      const { payment_details, ...dataToInsert } = transactionData;
-
-      const { data: transactionResult, error: transactionError } = await supabase
-        .from("transactions")
-        .insert(dataToInsert)
-        .select()
+      // Get the current stock for this product
+      const { data: productData, error: productError } = await supabase
+        .from('products')
+        .select('stock')
+        .eq('id', item.productId)
         .single();
-
-      if (transactionError) throw transactionError;
-
-      // Update product stock and sales count
-      for (const item of billItems) {
-        await supabase.rpc('decrement_stock', { 
-          p_id: item.productId, 
-          amount: item.quantity 
-        });
-        
-        await supabase.rpc('increment_sales', {
-          p_id: item.productId,
-          amount: item.quantity
-        });
-      }
-
-      // Show success message
-      toast.success('Payment processed successfully');
       
-      if (transactionResult) {
-        // Process transaction result
-        const transaction: Transaction = {
-          id: transactionResult.id,
-          transaction_id: transactionResult.transaction_id,
-          created_at: transactionResult.created_at,
-          amount: transactionResult.amount,
-          items: parseTransactionItems(transactionResult.items),
-          payment_method: transactionResult.payment_method,
-          payment_details: paymentDetails || {} // Use the paymentDetails from the function parameter
-        };
-        
-        setReceiptData(transaction);
-        setIsReceiptDialogOpen(true);
+      if (productError || !productData) {
+        console.error(`Failed to retrieve stock for product ${item.productId}:`, productError);
+        continue;
       }
       
-      // Reset the bill
-      setBillItems([]);
-      setIsCheckoutDialogOpen(false);
+      // Calculate new stock
+      const currentStock = productData.stock;
+      const newStock = Math.max(0, currentStock - item.quantity); // Ensure stock doesn't go below 0
+      
+      // Update the product stock
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ stock: newStock })
+        .eq('id', item.productId);
+      
+      if (updateError) {
+        console.error(`Failed to update stock for product ${item.productId}:`, updateError);
+      } else {
+        console.log(`Updated stock for ${item.name} from ${currentStock} to ${newStock}`);
+      }
+      
+      // Update the sales count for the product
+      await supabase.rpc('increment_sales', { 
+        p_id: item.productId, 
+        amount: item.quantity 
+      });
+      
     } catch (error) {
-      console.error('Error processing payment:', error);
-      toast.error('Payment processing failed');
-    } finally {
-      setIsPaymentProcessing(false);
+      console.error(`Error updating stock for product ${item.productId}:`, error);
     }
-  };
+  }
+};
 
-  return { handleCheckout };
+// Track inventory changes for reporting
+export const logInventoryChange = async (
+  items: BillItem[],
+  shopId: string,
+  transactionId: string
+) => {
+  for (const item of items) {
+    try {
+      await supabase
+        .from('inventory_logs')
+        .insert({
+          product_id: item.productId,
+          product_name: item.name,
+          quantity: item.quantity,
+          action: 'sale',
+          shop_id: shopId
+        });
+    } catch (error) {
+      console.error(`Failed to log inventory change for ${item.name}:`, error);
+    }
+  }
 };

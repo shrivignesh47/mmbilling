@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { CircleCheck, Clock, Receipt } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +6,8 @@ import { StatCard } from "@/components/dashboards/DashboardCards";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
+import { toast } from "sonner";
+import { logAuthEvent } from "@/components/auth/AuthEventLogger";
 
 const CashierDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,11 @@ const CashierDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    
+    // Log login event when dashboard is first loaded
+    if (profile?.id) {
+      logAuthEvent(profile.id, 'login');
+    }
   }, [profile?.shop_id]);
 
   const fetchDashboardData = async () => {
@@ -74,18 +80,27 @@ const CashierDashboard: React.FC = () => {
 
   const handleCashIn = () => {
     // For demo purposes, we'll just alert
-    alert("Cash In functionality will be implemented soon");
+    toast.info("Cash In functionality will be implemented soon");
   };
 
   const handleViewHistory = () => {
     // Navigate to a transactions history page (to be implemented)
-    alert("Transaction history will be implemented soon");
+    toast.info("Transaction history will be implemented soon");
   };
 
-  const handleEndShift = () => {
-    // This would typically log the end of a shift
+  const handleEndShift = async () => {
+    // Log the end of shift and record logout event
     if (window.confirm("Are you sure you want to end your shift?")) {
-      alert("Shift ended successfully");
+      try {
+        if (profile?.id) {
+          // Log the logout event
+          await logAuthEvent(profile.id, 'logout');
+          toast.success("Shift ended successfully");
+        }
+      } catch (error) {
+        console.error("Error ending shift:", error);
+        toast.error("Failed to end shift");
+      }
     }
   };
 

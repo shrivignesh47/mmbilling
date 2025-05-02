@@ -10,6 +10,15 @@ export const logAuthEvent = async (
   if (!userId) return;
   
   try {
+    // Get the user's profile to find their shop_id
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('shop_id')
+      .eq('id', userId)
+      .single();
+      
+    const shopId = profileData?.shop_id || '00000000-0000-0000-0000-000000000000';
+    
     // Use transactions table with event_type field to track auth events
     await supabase
       .from('transactions')
@@ -18,9 +27,10 @@ export const logAuthEvent = async (
         user_id: userId,
         event_type: event,
         items: metadata || {},
-        shop_id: '00000000-0000-0000-0000-000000000000', // Default shop ID
+        shop_id: shopId,
         amount: 0, // Not applicable for auth events
-        payment_method: 'system' // Not applicable for auth events
+        payment_method: 'system', // Not applicable for auth events
+        cashier_id: userId
       });
       
     console.log(`Auth event ${event} logged for user ${userId}`);

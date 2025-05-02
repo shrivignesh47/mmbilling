@@ -7,8 +7,8 @@ import { exportToExcel } from '@/components/utils/ExportUtils';
 
 interface CashierActivity {
   id: string;
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
   last_login: string | null;
   last_logout: string | null;
   daily_sales: number;
@@ -22,22 +22,46 @@ interface CashierActivityProps {
 
 const CashierActivity: React.FC<CashierActivityProps> = ({ cashiers, isLoading }) => {
   const formatTime = (timeStr: string | null) => {
-    if (!timeStr) return 'N/A';
+    if (!timeStr) return 'Not logged yet';
     try {
       const date = new Date(timeStr);
-      return date.toLocaleTimeString();
+      return date.toLocaleString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
     } catch (e) {
       return 'Invalid time';
     }
   };
   
+  const formatDate = (timeStr: string | null) => {
+    if (!timeStr) return 'N/A';
+    try {
+      const date = new Date(timeStr);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return 'Invalid date';
+    }
+  };
+  
   const handleExport = () => {
+    if (cashiers.length === 0) {
+      return;
+    }
+    
     const data = cashiers.map(cashier => ({
       'Name': cashier.name || 'Unknown',
       'Email': cashier.email || 'N/A',
-      'Last Login': cashier.last_login ? new Date(cashier.last_login).toLocaleString() : 'N/A',
-      'Last Logout': cashier.last_logout ? new Date(cashier.last_logout).toLocaleString() : 'N/A',
-      'Daily Sales Amount': cashier.daily_sales || 0,
+      'Last Login Date': cashier.last_login ? formatDate(cashier.last_login) : 'Not logged in',
+      'Last Login Time': cashier.last_login ? formatTime(cashier.last_login) : 'Not logged in',
+      'Last Logout Date': cashier.last_logout ? formatDate(cashier.last_logout) : 'Not logged out',
+      'Last Logout Time': cashier.last_logout ? formatTime(cashier.last_logout) : 'Not logged out',
+      'Daily Sales Amount': `$${cashier.daily_sales.toFixed(2)}`,
       'Daily Transactions': cashier.daily_transactions || 0
     }));
     
@@ -90,7 +114,7 @@ const CashierActivity: React.FC<CashierActivityProps> = ({ cashiers, isLoading }
                   </div>
                   <div className="flex items-center">
                     <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" />
-                    <span>Sales: ${cashier.daily_sales || 0}</span>
+                    <span>Sales: ${cashier.daily_sales.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center">
                     <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" />
