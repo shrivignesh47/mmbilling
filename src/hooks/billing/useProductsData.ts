@@ -69,17 +69,18 @@ export const useProductsData = (
           // Generate barcode for each product if not already present
           const barcode = product.sku || `PROD-${product.id.slice(-8).toUpperCase()}`;
           
-          // Determine unit type based on stored value or category
-          // Handle the case where unitType might not exist in the database
+          // Determine unit type based on category
           let unitType: UnitType = 'piece';
-          if (typeof product.unitType === 'string' && product.unitType) {
-            // Check if the unitType from database is valid
+          
+          // Check if we need to convert the string to a valid UnitType
+          if (product.unitType) {
+            // Validate the unitType is a valid UnitType
             const validUnitTypes: UnitType[] = ['kg', 'liter', 'piece', 'pack', 'ml', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
             if (validUnitTypes.includes(product.unitType as UnitType)) {
               unitType = product.unitType as UnitType;
             }
           } else {
-            // Use category to determine unit type
+            // If unitType doesn't exist in the database, determine from category
             unitType = getCategoryUnitType(product.category);
           }
           

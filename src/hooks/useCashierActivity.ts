@@ -4,11 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface CashierActivity {
   id: string;
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
   transactionCount: number;
   totalSales: number;
   lastActive: string | null;
+  // Adding these properties to match the expected type in CashierActivity component
+  last_login: string | null;
+  last_logout: string | null;
+  daily_sales: number;
+  daily_transactions: number;
 }
 
 export const useCashierActivity = (shopId: string | undefined) => {
@@ -44,28 +49,18 @@ export const useCashierActivity = (shopId: string | undefined) => {
         return;
       }
 
-      // 2. Format the cashier data with the transaction counts and sales
+      // 2. Format the cashier data - simplifying to avoid deep type instantiations
       const formattedCashiers: CashierActivity[] = await Promise.all(
         cashiersData.map(async (cashier) => {
-          // Get transaction count for this cashier
-          const { count: transactionCount, error: countError } = await supabase
+          // Get transaction count for this cashier - using simpler approach
+          const { count, error: countError } = await supabase
             .from("transactions")
-            .select("*", { count: "exact", head: true })
+            .select("id", { count: "exact", head: true })
             .eq("cashier_id", cashier.id);
 
-          if (countError) {
-            console.error("Error fetching transaction count:", countError);
-            return {
-              id: cashier.id,
-              name: cashier.name || "Unknown",
-              email: cashier.email || "",
-              transactionCount: 0,
-              totalSales: 0,
-              lastActive: null,
-            };
-          }
+          const transactionCount = countError ? 0 : (count || 0);
 
-          // Get total sales for this cashier
+          // Get total sales for this cashier - using simpler approach
           const { data: salesData, error: salesError } = await supabase
             .from("transactions")
             .select("amount")
@@ -73,7 +68,7 @@ export const useCashierActivity = (shopId: string | undefined) => {
 
           let totalSales = 0;
           if (!salesError && salesData) {
-            totalSales = salesData.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+            totalSales = salesData.reduce((sum, tx) => sum + (typeof tx.amount === 'number' ? tx.amount : 0), 0);
           }
 
           // Get last active timestamp
@@ -90,9 +85,14 @@ export const useCashierActivity = (shopId: string | undefined) => {
             id: cashier.id,
             name: cashier.name || "Unknown",
             email: cashier.email || "",
-            transactionCount: transactionCount || 0,
+            transactionCount,
             totalSales,
             lastActive,
+            // These additional fields make it compatible with the CashierActivity component
+            last_login: lastActive, // Using lastActive as a substitute for login
+            last_logout: null,     // No logout data available
+            daily_sales: totalSales,
+            daily_transactions: transactionCount
           };
         })
       );
@@ -106,5 +106,12 @@ export const useCashierActivity = (shopId: string | undefined) => {
     }
   };
 
-  return { cashiers, loading, error, fetchCashierActivity };
+  return { 
+    cashiers, 
+    loading, 
+    error, 
+    fetchCashierActivity,
+    // Add isLoading as an alias for loading to fix the compatibility issue
+    isLoading: loading 
+  };
 };

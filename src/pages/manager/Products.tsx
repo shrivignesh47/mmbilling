@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,7 @@ import ProductsGrid from "@/components/products/ProductsGrid";
 import ProductForm, { ProductFormData } from "@/components/products/ProductForm";
 import BarcodeGenerator from "@/components/products/BarcodeGenerator";
 
-// Define the proper Product interface with barcode
+// Define the proper Product interface with barcode and unitType as UnitType
 interface Product {
   id: string;
   name: string;
@@ -21,15 +22,15 @@ interface Product {
   price: number;
   stock: number;
   sku: string | null;
-  barcode: string; // Explicitly add barcode property as required
-  unitType?: UnitType;
+  barcode: string;
+  unitType: UnitType;
   sales_count: number;
-  created_at: string;
-  shop_id: string;
-  updated_at: string;
+  created_at?: string;
+  shop_id?: string;
+  updated_at?: string;
 }
 
-// Define the database product type (without barcode) to match what comes from Supabase
+// Define the database product type to match what comes from Supabase
 interface DatabaseProduct {
   id: string;
   name: string;
@@ -83,15 +84,31 @@ const Products = () => {
       
       if (error) throw error;
       
-      // Add barcode to each product if not already present
-      // Type assertion to handle the conversion from DatabaseProduct to Product
-      const productsWithBarcodes = (data || []).map((product: DatabaseProduct) => ({
-        ...product,
-        barcode: generateBarcode(product)
-      }));
+      // Add barcode and convert unitType to proper UnitType
+      const productsWithBarcodes = (data || []).map((product: DatabaseProduct) => {
+        // Generate barcode if not present
+        const barcode = product.sku || `PROD-${product.id.slice(-8).toUpperCase()}`;
+        
+        // Determine unit type - ensure it's a valid UnitType
+        let unitType: UnitType = 'piece';
+        if (product.unitType) {
+          const validUnitTypes: UnitType[] = ['kg', 'liter', 'piece', 'pack', 'ml', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
+          if (validUnitTypes.includes(product.unitType as UnitType)) {
+            unitType = product.unitType as UnitType;
+          }
+        }
+        
+        return {
+          ...product,
+          barcode,
+          unitType,
+          sku: product.sku || ''
+        };
+      });
       
-      setProducts(productsWithBarcodes);
-      setFilteredProducts(productsWithBarcodes);
+      // Cast to Product[] since we've ensured all required properties are set
+      setProducts(productsWithBarcodes as Product[]);
+      setFilteredProducts(productsWithBarcodes as Product[]);
     } catch (error: any) {
       console.error("Error fetching products:", error);
       toast.error("Error loading products: " + error.message);
@@ -197,7 +214,7 @@ const Products = () => {
             stock: formData.stock,
             sku: formData.sku,
             barcode: barcode,
-            unitType: formData.unitType || 'piece'
+            unitType: formData.unitType
           })
           .select();
         

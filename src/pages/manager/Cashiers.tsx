@@ -16,8 +16,8 @@ const Cashiers = () => {
   const [loading, setLoading] = useState(true);
   const [cashiers, setCashiers] = useState<any[]>([]);
   
-  // Fetch cashier activity data
-  const { cashiers: cashierActivityData, isLoading: activityLoading } = 
+  // Fetch cashier activity data - using the correct property names
+  const { cashiers: cashierActivityData, loading: activityLoading } = 
     useCashierActivity(profile?.shop_id);
   
   useEffect(() => {
