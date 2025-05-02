@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +13,7 @@ import ProductsGrid from "@/components/products/ProductsGrid";
 import ProductForm, { ProductFormData } from "@/components/products/ProductForm";
 import BarcodeGenerator from "@/components/products/BarcodeGenerator";
 
+// Define the proper Product interface with barcode
 interface Product {
   id: string;
   name: string;

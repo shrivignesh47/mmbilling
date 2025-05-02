@@ -18,8 +18,9 @@ export interface Product {
   stock: number;
   category: string;
   sku: string | null;
-  unitType?: UnitType;
   barcode?: string;
+  unitType?: UnitType;
+  sales_count?: number;
 }
 
 export interface PaymentDetails {
@@ -36,7 +37,7 @@ export interface Transaction {
   amount: number;
   items: BillItem[];
   payment_method: string;
-  payment_details?: PaymentDetails;
+  payment_details: PaymentDetails;
 }
 
 export interface TransactionResponse {
