@@ -22,6 +22,12 @@ interface TransactionAmount {
   amount: number;
 }
 
+// Define a simple type for Supabase query responses to avoid deep type inference
+interface QueryResponse<T> {
+  data: T[] | null;
+  error: Error | null;
+}
+
 export const useCashierActivity = (shopId: string | undefined) => {
   const [cashiers, setCashiers] = useState<CashierActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,8 +63,13 @@ export const useCashierActivity = (shopId: string | undefined) => {
         // Fetch activity data for all cashiers
         const cashiersWithActivity: CashierActivity[] = await Promise.all(
           cashierData.map(async (cashier) => {
-            // Get login events - using plain function without chaining to avoid deep type inference
-            const loginResult = await supabase
+            // Get login events
+            const loginResponse: QueryResponse<TransactionAuthEvent> = {
+              data: null,
+              error: null
+            };
+            
+            const loginQuery = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
@@ -66,11 +77,16 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .order('created_at', { ascending: false })
               .limit(1);
               
-            const loginData = loginResult.data as TransactionAuthEvent[] | null;
-            const loginError = loginResult.error;
+            loginResponse.data = loginQuery.data as TransactionAuthEvent[] | null;
+            loginResponse.error = loginQuery.error;
             
-            // Get logout events - using plain function without chaining to avoid deep type inference
-            const logoutResult = await supabase
+            // Get logout events
+            const logoutResponse: QueryResponse<TransactionAuthEvent> = {
+              data: null,
+              error: null
+            };
+            
+            const logoutQuery = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
@@ -78,37 +94,42 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .order('created_at', { ascending: false })
               .limit(1);
               
-            const logoutData = logoutResult.data as TransactionAuthEvent[] | null;
-            const logoutError = logoutResult.error;
+            logoutResponse.data = logoutQuery.data as TransactionAuthEvent[] | null;
+            logoutResponse.error = logoutQuery.error;
             
             let last_login = null;
             let last_logout = null;
             
-            if (!loginError && loginData && loginData.length > 0) {
-              last_login = loginData[0].created_at;
+            if (!loginResponse.error && loginResponse.data && loginResponse.data.length > 0) {
+              last_login = loginResponse.data[0].created_at;
             }
             
-            if (!logoutError && logoutData && logoutData.length > 0) {
-              last_logout = logoutData[0].created_at;
+            if (!logoutResponse.error && logoutResponse.data && logoutResponse.data.length > 0) {
+              last_logout = logoutResponse.data[0].created_at;
             }
             
-            // Get daily sales data - using plain function without chaining to avoid deep type inference
-            const txResult = await supabase
+            // Get daily sales data
+            const txResponse: QueryResponse<TransactionAmount> = {
+              data: null,
+              error: null
+            };
+            
+            const txQuery = await supabase
               .from('transactions')
               .select('amount')
               .eq('cashier_id', cashier.id)
               .eq('shop_id', shopId)
               .gte('created_at', today.toISOString());
               
-            const txData = txResult.data as TransactionAmount[] | null;
-            const txError = txResult.error;
+            txResponse.data = txQuery.data as TransactionAmount[] | null;
+            txResponse.error = txQuery.error;
             
             let daily_sales = 0;
             let daily_transactions = 0;
             
-            if (!txError && txData) {
-              daily_sales = txData.reduce((sum, tx) => sum + Number(tx.amount), 0);
-              daily_transactions = txData.length;
+            if (!txResponse.error && txResponse.data) {
+              daily_sales = txResponse.data.reduce((sum, tx) => sum + Number(tx.amount), 0);
+              daily_transactions = txResponse.data.length;
             }
             
             return {
