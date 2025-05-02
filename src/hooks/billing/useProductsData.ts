@@ -67,12 +67,12 @@ export const useProductsData = (
       if (data) {
         const typedProducts: Product[] = data.map(product => {
           // Generate barcode for each product if not already present
-          const barcode = product.sku || `PROD-${product.id.slice(-8).toUpperCase()}`;
+          const barcode = product.barcode || product.sku || `PROD-${product.id.slice(-8).toUpperCase()}`;
           
           // Determine unit type based on category
           let unitType: UnitType = 'piece';
           
-          // Check if we need to convert the string to a valid UnitType
+          // Check if the product has a unitType property
           if (product.unitType) {
             // Validate the unitType is a valid UnitType
             const validUnitTypes: UnitType[] = ['kg', 'liter', 'piece', 'pack', 'ml', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
@@ -80,7 +80,7 @@ export const useProductsData = (
               unitType = product.unitType as UnitType;
             }
           } else {
-            // If unitType doesn't exist in the database, determine from category
+            // If unitType doesn't exist in the database record, determine from category
             unitType = getCategoryUnitType(product.category);
           }
           

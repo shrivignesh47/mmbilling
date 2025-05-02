@@ -49,10 +49,10 @@ export const useCashierActivity = (shopId: string | undefined) => {
         return;
       }
 
-      // 2. Format the cashier data - simplifying to avoid deep type instantiations
-      const formattedCashiers: CashierActivity[] = await Promise.all(
+      // 2. Format the cashier data with proper typing
+      const formattedCashiers = await Promise.all(
         cashiersData.map(async (cashier) => {
-          // Get transaction count for this cashier - using simpler approach
+          // Get transaction count for this cashier
           const { count, error: countError } = await supabase
             .from("transactions")
             .select("id", { count: "exact", head: true })
@@ -60,7 +60,7 @@ export const useCashierActivity = (shopId: string | undefined) => {
 
           const transactionCount = countError ? 0 : (count || 0);
 
-          // Get total sales for this cashier - using simpler approach
+          // Get total sales for this cashier
           const { data: salesData, error: salesError } = await supabase
             .from("transactions")
             .select("amount")

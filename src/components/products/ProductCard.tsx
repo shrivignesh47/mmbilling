@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
+import { UnitType } from '@/components/utils/UnitUtils';
 
 interface Product {
   id: string;
@@ -14,6 +15,7 @@ interface Product {
   stock: number;
   sku: string;
   barcode?: string;
+  unitType: UnitType;
   sales_count: number;
 }
 

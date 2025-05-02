@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,15 +33,16 @@ interface Product {
 interface DatabaseProduct {
   id: string;
   name: string;
-  category: string;
+  category: string | null;
   price: number;
   stock: number;
   sku: string | null;
-  unitType?: string;
-  sales_count: number;
-  created_at: string;
+  barcode?: string | null;
+  unitType?: string | null;
+  sales_count: number | null;
+  created_at: string | null;
   shop_id: string;
-  updated_at: string;
+  updated_at: string | null;
 }
 
 const Products = () => {
@@ -87,7 +87,7 @@ const Products = () => {
       // Add barcode and convert unitType to proper UnitType
       const productsWithBarcodes = (data || []).map((product: DatabaseProduct) => {
         // Generate barcode if not present
-        const barcode = product.sku || `PROD-${product.id.slice(-8).toUpperCase()}`;
+        const barcode = product.barcode || product.sku || `PROD-${product.id.slice(-8).toUpperCase()}`;
         
         // Determine unit type - ensure it's a valid UnitType
         let unitType: UnitType = 'piece';
@@ -102,7 +102,9 @@ const Products = () => {
           ...product,
           barcode,
           unitType,
-          sku: product.sku || ''
+          sku: product.sku || '',
+          category: product.category || '',
+          sales_count: product.sales_count || 0
         };
       });
       

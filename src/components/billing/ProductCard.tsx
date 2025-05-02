@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Barcode } from "lucide-react";
 import { Product } from "./types";
 import { generateBarcode } from "../utils/BarcodeGeneratorUtils";
+import { UnitType } from "@/components/utils/UnitUtils";
 
 interface ProductCardProps {
   product: Product;

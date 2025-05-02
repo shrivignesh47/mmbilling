@@ -59,6 +59,7 @@ export type Database = {
       }
       products: {
         Row: {
+          barcode: string | null
           category: string | null
           created_at: string | null
           id: string
@@ -68,9 +69,11 @@ export type Database = {
           shop_id: string
           sku: string | null
           stock: number
+          unitType: string | null
           updated_at: string | null
         }
         Insert: {
+          barcode?: string | null
           category?: string | null
           created_at?: string | null
           id?: string
@@ -80,9 +83,11 @@ export type Database = {
           shop_id: string
           sku?: string | null
           stock?: number
+          unitType?: string | null
           updated_at?: string | null
         }
         Update: {
+          barcode?: string | null
           category?: string | null
           created_at?: string | null
           id?: string
@@ -92,6 +97,7 @@ export type Database = {
           shop_id?: string
           sku?: string | null
           stock?: number
+          unitType?: string | null
           updated_at?: string | null
         }
         Relationships: [
