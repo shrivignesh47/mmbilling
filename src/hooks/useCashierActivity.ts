@@ -22,12 +22,6 @@ interface TransactionAmount {
   amount: number;
 }
 
-// Define simple types for Supabase query responses to avoid deep type instantiation
-interface SupabaseQueryResponse<T> {
-  data: T[] | null;
-  error: any;
-}
-
 export const useCashierActivity = (shopId: string | undefined) => {
   const [cashiers, setCashiers] = useState<CashierActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,29 +57,29 @@ export const useCashierActivity = (shopId: string | undefined) => {
         // Fetch activity data for all cashiers
         const cashiersWithActivity: CashierActivity[] = await Promise.all(
           cashierData.map(async (cashier) => {
-            // Get login events with type annotation to prevent deep recursion
-            const loginResponse = await supabase
+            // Get login events - avoid complex type resolution
+            const loginQuery = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
               .eq('event_type', 'login')
               .order('created_at', { ascending: false })
-              .limit(1) as unknown as SupabaseQueryResponse<TransactionAuthEvent>;
+              .limit(1);
             
-            const loginData = loginResponse.data;
-            const loginError = loginResponse.error;
+            const loginData = loginQuery.data as TransactionAuthEvent[] | null;
+            const loginError = loginQuery.error;
               
-            // Get logout events with type annotation to prevent deep recursion
-            const logoutResponse = await supabase
+            // Get logout events - avoid complex type resolution
+            const logoutQuery = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
               .eq('event_type', 'logout')
               .order('created_at', { ascending: false })
-              .limit(1) as unknown as SupabaseQueryResponse<TransactionAuthEvent>;
+              .limit(1);
             
-            const logoutData = logoutResponse.data;
-            const logoutError = logoutResponse.error;
+            const logoutData = logoutQuery.data as TransactionAuthEvent[] | null;
+            const logoutError = logoutQuery.error;
               
             let last_login = null;
             let last_logout = null;
@@ -98,16 +92,16 @@ export const useCashierActivity = (shopId: string | undefined) => {
               last_logout = logoutData[0].created_at;
             }
             
-            // Get daily sales data with type annotation to prevent deep recursion
-            const txResponse = await supabase
+            // Get daily sales data - avoid complex type resolution
+            const txQuery = await supabase
               .from('transactions')
               .select('amount')
               .eq('cashier_id', cashier.id)
               .eq('shop_id', shopId)
-              .gte('created_at', today.toISOString()) as unknown as SupabaseQueryResponse<TransactionAmount>;
+              .gte('created_at', today.toISOString());
             
-            const txData = txResponse.data;
-            const txError = txResponse.error;
+            const txData = txQuery.data as TransactionAmount[] | null;
+            const txError = txQuery.error;
             
             let daily_sales = 0;
             let daily_transactions = 0;
