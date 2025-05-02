@@ -68,8 +68,8 @@ export const useCashierActivity = (shopId: string | undefined) => {
         // Fetch activity data for all cashiers
         const cashiersWithActivity: CashierActivity[] = await Promise.all(
           cashierData.map(async (cashier) => {
-            // Get login events - explicitly type the response
-            const loginResult: SupabaseAuthEventResponse = await supabase
+            // Get login events
+            const { data: loginData, error: loginError } = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
@@ -77,8 +77,8 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .order('created_at', { ascending: false })
               .limit(1);
               
-            // Get logout events - explicitly type the response
-            const logoutResult: SupabaseAuthEventResponse = await supabase
+            // Get logout events
+            const { data: logoutData, error: logoutError } = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
@@ -89,16 +89,16 @@ export const useCashierActivity = (shopId: string | undefined) => {
             let last_login = null;
             let last_logout = null;
             
-            if (loginResult.data && loginResult.data.length > 0) {
-              last_login = loginResult.data[0].created_at;
+            if (!loginError && loginData && loginData.length > 0) {
+              last_login = loginData[0].created_at;
             }
             
-            if (logoutResult.data && logoutResult.data.length > 0) {
-              last_logout = logoutResult.data[0].created_at;
+            if (!logoutError && logoutData && logoutData.length > 0) {
+              last_logout = logoutData[0].created_at;
             }
             
-            // Get daily sales data - explicitly type the response
-            const txResult: SupabaseAmountResponse = await supabase
+            // Get daily sales data
+            const { data: txData, error: txError } = await supabase
               .from('transactions')
               .select('amount')
               .eq('cashier_id', cashier.id)
@@ -108,9 +108,9 @@ export const useCashierActivity = (shopId: string | undefined) => {
             let daily_sales = 0;
             let daily_transactions = 0;
             
-            if (txResult.data) {
-              daily_sales = txResult.data.reduce((sum, tx) => sum + Number(tx.amount), 0);
-              daily_transactions = txResult.data.length;
+            if (!txError && txData) {
+              daily_sales = txData.reduce((sum, tx) => sum + Number(tx.amount), 0);
+              daily_transactions = txData.length;
             }
             
             return {
