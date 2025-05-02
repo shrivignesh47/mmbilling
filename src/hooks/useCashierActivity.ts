@@ -13,15 +13,25 @@ interface CashierActivity {
   daily_transactions: number;
 }
 
-// Define a specific transaction type for auth events
-interface TransactionAuthEvent {
+// Define explicit types for our transaction data
+type TransactionAuthEvent = {
   created_at: string;
-}
+};
 
-// Define a transaction amount type
-interface TransactionAmount {
+type TransactionAmount = {
   amount: number;
-}
+};
+
+// Define explicit types for Supabase query responses
+type SupabaseAuthEventResponse = {
+  data: TransactionAuthEvent[] | null;
+  error: any;
+};
+
+type SupabaseAmountResponse = {
+  data: TransactionAmount[] | null;
+  error: any;
+};
 
 export const useCashierActivity = (shopId: string | undefined) => {
   const [cashiers, setCashiers] = useState<CashierActivity[]>([]);
@@ -58,8 +68,8 @@ export const useCashierActivity = (shopId: string | undefined) => {
         // Fetch activity data for all cashiers
         const cashiersWithActivity: CashierActivity[] = await Promise.all(
           cashierData.map(async (cashier) => {
-            // Get authentication logs (for login/logout)
-            const loginResult = await supabase
+            // Get login events - explicitly type the response
+            const loginResult: SupabaseAuthEventResponse = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
@@ -67,10 +77,8 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .order('created_at', { ascending: false })
               .limit(1);
               
-            const loginEvents = loginResult.data as TransactionAuthEvent[] | null;
-            const loginError = loginResult.error;
-              
-            const logoutResult = await supabase
+            // Get logout events - explicitly type the response
+            const logoutResult: SupabaseAuthEventResponse = await supabase
               .from('transactions')
               .select('created_at')
               .eq('user_id', cashier.id)
@@ -78,37 +86,31 @@ export const useCashierActivity = (shopId: string | undefined) => {
               .order('created_at', { ascending: false })
               .limit(1);
               
-            const logoutEvents = logoutResult.data as TransactionAuthEvent[] | null;
-            const logoutError = logoutResult.error;
-              
             let last_login = null;
             let last_logout = null;
             
-            if (!loginError && loginEvents && loginEvents.length > 0) {
-              last_login = loginEvents[0].created_at;
+            if (loginResult.data && loginResult.data.length > 0) {
+              last_login = loginResult.data[0].created_at;
             }
             
-            if (!logoutError && logoutEvents && logoutEvents.length > 0) {
-              last_logout = logoutEvents[0].created_at;
+            if (logoutResult.data && logoutResult.data.length > 0) {
+              last_logout = logoutResult.data[0].created_at;
             }
             
-            // Get daily sales data
-            const txResult = await supabase
+            // Get daily sales data - explicitly type the response
+            const txResult: SupabaseAmountResponse = await supabase
               .from('transactions')
               .select('amount')
               .eq('cashier_id', cashier.id)
               .eq('shop_id', shopId)
               .gte('created_at', today.toISOString());
-              
-            const transactions = txResult.data as TransactionAmount[] | null;
-            const txError = txResult.error;
             
             let daily_sales = 0;
             let daily_transactions = 0;
             
-            if (!txError && transactions) {
-              daily_sales = transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
-              daily_transactions = transactions.length;
+            if (txResult.data) {
+              daily_sales = txResult.data.reduce((sum, tx) => sum + Number(tx.amount), 0);
+              daily_transactions = txResult.data.length;
             }
             
             return {
