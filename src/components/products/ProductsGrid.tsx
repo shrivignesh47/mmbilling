@@ -4,6 +4,7 @@ import { Package } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ProductCard from './ProductCard';
+import { UnitType } from '@/components/utils/UnitUtils';
 
 interface Product {
   id: string;
@@ -14,6 +15,7 @@ interface Product {
   sku: string;
   barcode?: string;
   sales_count: number;
+  unitType: UnitType; // Add this property to fix the error
 }
 
 interface ProductsGridProps {
