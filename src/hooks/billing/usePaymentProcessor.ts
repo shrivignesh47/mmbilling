@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BillItem, PaymentDetails, Transaction } from "@/components/billing/types";
 import { toast } from "sonner";
 import { billItemsToJson } from "@/components/utils/BillingUtils";
+import { Json } from "@/integrations/supabase/types";
 
 // Implementation of inventory functions
 export const updateProductStockInternal = async (billItems: BillItem[]) => {
