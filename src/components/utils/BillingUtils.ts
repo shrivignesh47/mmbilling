@@ -1,3 +1,4 @@
+
 import { Json } from "@/integrations/supabase/types";
 import { BillItem, Product, PaymentDetails, Transaction } from "@/components/billing/types";
 import { UnitType, formatQuantityWithUnit } from "./UnitUtils";
