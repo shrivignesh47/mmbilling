@@ -87,6 +87,9 @@ export const usePaymentProcessor = ({
       // Convert billItems to Json compatible format
       const jsonItems = billItemsToJson(billItems);
       
+      // Convert paymentDetails to Json compatible format
+      const jsonPaymentDetails = JSON.parse(JSON.stringify(paymentDetails)) as unknown as Json;
+      
       // Insert transaction record
       const { data: transactionData, error: transactionError } = await supabase
         .from('transactions')
@@ -95,7 +98,7 @@ export const usePaymentProcessor = ({
           amount: totalAmount,
           items: jsonItems,
           payment_method: method,
-          payment_details: paymentDetails,
+          payment_details: jsonPaymentDetails,
           cashier_id: profile?.id,
           shop_id: profile?.shop_id
         })
