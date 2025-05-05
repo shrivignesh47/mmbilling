@@ -13,6 +13,7 @@ import CashierLayout from "@/layouts/CashierLayout";
 
 // Pages
 import Login from "@/pages/auth/Login";
+import ShopLogin from "@/pages/auth/ShopLogin";
 import NotFound from "@/pages/NotFound";
 
 // Owner Pages
@@ -45,6 +46,7 @@ const App = () => (
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/shop/:shopSlug" element={<ShopLogin />} />
             <Route index element={<Navigate to="/login" />} />
 
             {/* Owner Routes */}

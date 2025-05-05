@@ -12,7 +12,8 @@ import {
   X,
   AlertCircle,
   User,
-  Building
+  Building,
+  Link
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -309,6 +310,21 @@ const Shops: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
+  // New function to copy shop login URL
+  const copyShopLoginUrl = (shopName: string) => {
+    const baseUrl = window.location.origin;
+    const shopUrl = `${baseUrl}/shop/${shopName}`;
+    
+    navigator.clipboard.writeText(shopUrl)
+      .then(() => {
+        toast.success("Shop login URL copied to clipboard");
+      })
+      .catch((error) => {
+        console.error("Failed to copy shop URL:", error);
+        toast.error("Failed to copy URL");
+      });
+  };
+
   // Filter shops based on search term
   const filteredShops = searchTerm 
     ? shops.filter(shop => 
@@ -479,6 +495,24 @@ const Shops: React.FC = () => {
                       </div>
                       <span className="font-medium">{shop.manager_name || "Unassigned"}</span>
                     </div>
+                    
+                    {/* New: Shop Login URL section */}
+                    {shop.is_active && (
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                        <div className="text-sm text-muted-foreground flex items-center">
+                          <Link className="h-4 w-4 mr-1" />
+                          Shop login
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="h-8"
+                          onClick={() => copyShopLoginUrl(shop.name)}
+                        >
+                          Copy URL
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                   <CardFooter className="border-t bg-muted/50 pt-3">
                     <div className="flex justify-between w-full">
