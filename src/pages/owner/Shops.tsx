@@ -310,10 +310,16 @@ const Shops: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
-  // New function to copy shop login URL
+  // New function to format shop name for URL (replace spaces with underscores)
+  const formatShopNameForUrl = (shopName: string): string => {
+    return shopName.replace(/\s+/g, '_');
+  };
+
+  // Updated function to copy shop login URL with formatted shop name
   const copyShopLoginUrl = (shopName: string) => {
     const baseUrl = window.location.origin;
-    const shopUrl = `${baseUrl}/shop/${shopName}`;
+    const formattedName = formatShopNameForUrl(shopName);
+    const shopUrl = `${baseUrl}/shop/${formattedName}`;
     
     navigator.clipboard.writeText(shopUrl)
       .then(() => {
@@ -496,7 +502,7 @@ const Shops: React.FC = () => {
                       <span className="font-medium">{shop.manager_name || "Unassigned"}</span>
                     </div>
                     
-                    {/* New: Shop Login URL section */}
+                    {/* In the shop card, update the shop login URL section */}
                     {shop.is_active && (
                       <div className="flex items-center justify-between mt-2 pt-2 border-t">
                         <div className="text-sm text-muted-foreground flex items-center">

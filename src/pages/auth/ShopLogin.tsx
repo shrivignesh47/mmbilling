@@ -19,6 +19,11 @@ const ShopLogin: React.FC = () => {
   const navigate = useNavigate();
   const { shopSlug } = useParams<{ shopSlug: string }>();
 
+  // Function to format shop slug to shop name (convert underscores to spaces)
+  const formatShopSlugToName = (slug: string): string => {
+    return slug.replace(/_/g, ' ');
+  };
+
   useEffect(() => {
     const fetchShopDetails = async () => {
       if (!shopSlug) {
@@ -28,14 +33,18 @@ const ShopLogin: React.FC = () => {
       }
 
       try {
-        // Fetch shop details based on the URL slug
+        // Convert the slug back to a potential shop name (replace underscores with spaces)
+        const possibleShopName = formatShopSlugToName(shopSlug);
+
+        // Fetch shop details based on the formatted name
         const { data, error } = await supabase
           .from('shops')
           .select('id, name')
-          .eq('name', shopSlug)
+          .eq('name', possibleShopName)
           .single();
 
         if (error || !data) {
+          console.error("Shop fetch error:", error);
           toast.error("Shop not found");
           navigate("/login");
           return;
