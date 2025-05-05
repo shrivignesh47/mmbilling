@@ -258,24 +258,20 @@ const Users: React.FC = () => {
             .eq('manager_id', userId);
         }
 
-        // Delete the user from auth
-        const { error } = await supabase.auth.admin.deleteUser(userId);
-        
-        if (error) {
-          // Fallback to just deleting the profile if we don't have admin rights
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .delete()
-            .eq('id', userId);
+        // Instead of trying to delete the auth user directly (which requires admin privileges),
+        // just delete the profile record, which effectively deactivates the user in our system
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', userId);
             
-          if (profileError) throw profileError;
-        }
+        if (profileError) throw profileError;
         
-        toast.success('User deleted successfully');
+        toast.success('User removed successfully');
         fetchUsers();
       } catch (error: any) {
-        console.error('Error deleting user:', error);
-        toast.error(error.message || 'Failed to delete user');
+        console.error('Error removing user:', error);
+        toast.error(error.message || 'Failed to remove user');
       }
     }
   };
