@@ -37,22 +37,31 @@ const ShopLogin: React.FC = () => {
         const possibleShopName = formatShopSlugToName(shopSlug);
         console.log("Looking up shop name:", possibleShopName);
 
-        // Fetch shop details based on the formatted name
+        // Fetch shop details based on the formatted name using ilike for case insensitive search
         const { data, error } = await supabase
           .from('shops')
           .select('id, name')
-          .eq('name', possibleShopName)
-          .single();
+          .ilike('name', possibleShopName)
+          .eq('is_active', true);
 
-        if (error || !data) {
+        if (error) {
           console.error("Shop fetch error:", error);
-          toast.error("Shop not found");
+          toast.error("Error searching for shop");
           navigate("/login");
           return;
         }
 
-        setShopId(data.id);
-        setShopName(data.name);
+        if (!data || data.length === 0) {
+          console.error("Shop not found:", possibleShopName);
+          toast.error("Shop not found or inactive");
+          navigate("/login");
+          return;
+        }
+
+        // Use the first match if multiple are found
+        const shop = data[0];
+        setShopId(shop.id);
+        setShopName(shop.name);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching shop:", error);
@@ -156,6 +165,7 @@ const ShopLogin: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
               />
             </div>
             <div className="text-sm text-muted-foreground">
