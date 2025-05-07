@@ -1,7 +1,21 @@
 
 import { User, Session } from "@supabase/supabase-js";
 
-export type UserRole = "owner" | "manager" | "cashier";
+export type UserRole = "owner" | "manager" | "cashier" | string;
+
+export interface Permission {
+  id: string;
+  name: string;
+  description: string;
+  code: string;
+}
+
+export interface CustomRole {
+  id: string;
+  name: string;
+  description?: string;
+  permissions: string[]; // Permission codes
+}
 
 export interface Profile {
   id: string;
@@ -9,6 +23,7 @@ export interface Profile {
   role: UserRole;
   shop_id?: string;
   shop_name?: string;  // Added to store shop name for easier access
+  custom_permissions?: string[]; // Individual permissions assigned directly to user
 }
 
 export interface AuthState {

@@ -20,6 +20,8 @@ import NotFound from "@/pages/NotFound";
 import OwnerDashboard from "@/pages/dashboards/owner/OwnerDashboard";
 import Shops from "@/pages/owner/Shops";
 import Users from "@/pages/owner/Users";
+import Roles from "@/pages/owner/Roles";
+import Notifications from "@/pages/owner/Notifications";
 import Settings from "@/pages/owner/Settings";
 
 // Manager Pages
@@ -54,6 +56,8 @@ const App = () => (
               <Route path="dashboard" element={<OwnerDashboard />} />
               <Route path="shops" element={<Shops />} />
               <Route path="users" element={<Users />} />
+              <Route path="roles" element={<Roles />} />
+              <Route path="notifications" element={<Notifications />} />
               <Route path="settings" element={<Settings />} />
               <Route index element={<Navigate to="/owner/dashboard" />} />
             </Route>

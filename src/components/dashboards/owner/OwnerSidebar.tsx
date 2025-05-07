@@ -7,6 +7,8 @@ import {
   LogOut,
   Settings,
   Users,
+  ShieldCheck,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth";
@@ -89,6 +91,12 @@ const OwnerSidebar: React.FC<OwnerSidebarProps> = ({ collapsed = false }) => {
         </SidebarItem>
         <SidebarItem to="/owner/users" icon={Users} collapsed={collapsed}>
           Users
+        </SidebarItem>
+        <SidebarItem to="/owner/roles" icon={ShieldCheck} collapsed={collapsed}>
+          Roles & Permissions
+        </SidebarItem>
+        <SidebarItem to="/owner/notifications" icon={Bell} collapsed={collapsed}>
+          Notifications
         </SidebarItem>
         <SidebarItem to="/owner/settings" icon={Settings} collapsed={collapsed}>
           Settings
