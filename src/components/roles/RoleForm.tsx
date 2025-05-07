@@ -66,7 +66,13 @@ const RoleForm: React.FC<RoleFormProps> = ({
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await onSubmit(values);
+      // Convert the form values to the required data format for onSubmit
+      const submitData = {
+        name: values.name,
+        description: values.description || "",
+        permissions: values.permissions,
+      };
+      await onSubmit(submitData);
     } catch (error) {
       console.error("Error submitting role:", error);
       toast.error("Failed to save role");

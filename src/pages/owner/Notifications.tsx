@@ -64,7 +64,7 @@ const NotificationsPage: React.FC = () => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setNotifications(data || []);
+        setNotifications(data as Notification[] || []);
       } catch (error) {
         console.error('Error fetching notifications:', error);
         toast.error('Failed to load notifications');
@@ -83,7 +83,7 @@ const NotificationsPage: React.FC = () => {
           .order('role');
 
         if (error) throw error;
-        setUsers(data || []);
+        setUsers(data as User[] || []);
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -102,7 +102,7 @@ const NotificationsPage: React.FC = () => {
           .select('id, name');
 
         if (error) throw error;
-        setRoles([...standardRoles, ...(data || [])]);
+        setRoles([...standardRoles, ...(data as Role[] || [])]);
       } catch (error) {
         console.error('Error fetching roles:', error);
       }
@@ -127,8 +127,6 @@ const NotificationsPage: React.FC = () => {
         role: values.role,
         priority: values.priority,
         status: 'sent',
-        user_ids: values.user_ids,
-        send_email: values.send_email,
       };
 
       // Send notification
@@ -138,6 +136,20 @@ const NotificationsPage: React.FC = () => {
         .select();
 
       if (error) throw error;
+
+      // If specific users selected, add them to notification_recipients
+      if (values.recipient_type === 'specific' && values.user_ids?.length > 0) {
+        const recipientData = values.user_ids.map((userId: string) => ({
+          notification_id: data[0].id,
+          user_id: userId,
+        }));
+
+        const { error: recipientsError } = await supabase
+          .from('notification_recipients')
+          .insert(recipientData);
+
+        if (recipientsError) throw recipientsError;
+      }
 
       // Show success message
       toast.success('Notification sent successfully');
@@ -151,7 +163,7 @@ const NotificationsPage: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      setNotifications(updatedData || []);
+      setNotifications(updatedData as Notification[] || []);
 
     } catch (error: any) {
       console.error('Error sending notification:', error);

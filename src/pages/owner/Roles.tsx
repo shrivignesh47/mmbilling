@@ -61,7 +61,7 @@ const RolesPage: React.FC = () => {
         throw error;
       }
 
-      setRoles(data || []);
+      setRoles(data as CustomRole[] || []);
     } catch (error) {
       console.error('Error fetching roles:', error);
       toast.error('Failed to load roles');
