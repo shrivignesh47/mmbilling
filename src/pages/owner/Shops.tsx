@@ -312,7 +312,7 @@ const Shops: React.FC = () => {
 
   // New function to format shop name for URL (replace spaces with underscores)
   const formatShopNameForUrl = (shopName: string): string => {
-    return shopName.replace(/\s+/g, '_');
+    return encodeURIComponent(shopName).replace(/%20/g, '_');
   };
 
   // Updated function to copy shop login URL with formatted shop name

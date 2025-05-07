@@ -21,7 +21,7 @@ const ShopLogin: React.FC = () => {
 
   // Function to format shop slug to shop name (convert underscores to spaces)
   const formatShopSlugToName = (slug: string): string => {
-    return slug.replace(/_/g, ' ');
+    return decodeURIComponent(slug.replace(/_/g, ' '));
   };
 
   useEffect(() => {
@@ -35,6 +35,7 @@ const ShopLogin: React.FC = () => {
       try {
         // Convert the slug back to a potential shop name (replace underscores with spaces)
         const possibleShopName = formatShopSlugToName(shopSlug);
+        console.log("Looking up shop name:", possibleShopName);
 
         // Fetch shop details based on the formatted name
         const { data, error } = await supabase
