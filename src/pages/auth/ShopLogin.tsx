@@ -37,31 +37,67 @@ const ShopLogin: React.FC = () => {
         const possibleShopName = formatShopSlugToName(shopSlug);
         console.log("Looking up shop name:", possibleShopName);
 
-        // Fetch shop details based on the formatted name using ilike for case insensitive search
-        const { data, error } = await supabase
+        // Try to find the shop using different search methods (try various search approaches)
+        let shopData = null;
+        
+        // Method 1: Try exact match first
+        const { data: exactMatch, error: exactMatchError } = await supabase
           .from('shops')
           .select('id, name')
-          .ilike('name', possibleShopName)
+          .eq('name', possibleShopName)
           .eq('is_active', true);
 
-        if (error) {
-          console.error("Shop fetch error:", error);
-          toast.error("Error searching for shop");
-          navigate("/login");
-          return;
+        if (!exactMatchError && exactMatch && exactMatch.length > 0) {
+          shopData = exactMatch[0];
+          console.log("Found shop with exact match:", shopData.name);
+        } else {
+          console.log("No exact match found, trying case insensitive search");
+          
+          // Method 2: Try case insensitive search
+          const { data: ilikeMatch, error: ilikeMatchError } = await supabase
+            .from('shops')
+            .select('id, name')
+            .ilike('name', possibleShopName)
+            .eq('is_active', true);
+
+          if (!ilikeMatchError && ilikeMatch && ilikeMatch.length > 0) {
+            shopData = ilikeMatch[0];
+            console.log("Found shop with case insensitive match:", shopData.name);
+          } else {
+            console.log("No case insensitive match found, trying contains search");
+            
+            // Method 3: Try containing the term (as a last resort)
+            const { data: containsMatch, error: containsMatchError } = await supabase
+              .from('shops')
+              .select('id, name')
+              .ilike('name', `%${possibleShopName}%`)
+              .eq('is_active', true);
+              
+            if (!containsMatchError && containsMatch && containsMatch.length > 0) {
+              shopData = containsMatch[0];
+              console.log("Found shop with contains match:", shopData.name);
+            }
+          }
         }
 
-        if (!data || data.length === 0) {
+        if (!shopData) {
           console.error("Shop not found:", possibleShopName);
+          
+          // List all active shops for debugging
+          const { data: allShops } = await supabase
+            .from('shops')
+            .select('name')
+            .eq('is_active', true);
+            
+          console.log("Available active shops:", allShops?.map(s => s.name) || []);
+          
           toast.error("Shop not found or inactive");
           navigate("/login");
           return;
         }
 
-        // Use the first match if multiple are found
-        const shop = data[0];
-        setShopId(shop.id);
-        setShopName(shop.name);
+        setShopId(shopData.id);
+        setShopName(shopData.name);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching shop:", error);

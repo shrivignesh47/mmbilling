@@ -321,6 +321,11 @@ const Shops: React.FC = () => {
     const formattedName = formatShopNameForUrl(shopName);
     const shopUrl = `${baseUrl}/shop/${formattedName}`;
     
+    // Output URL for debugging
+    console.log("Generated shop URL:", shopUrl);
+    console.log("Original shop name:", shopName);
+    console.log("Formatted shop name for URL:", formattedName);
+    
     navigator.clipboard.writeText(shopUrl)
       .then(() => {
         toast.success("Shop login URL copied to clipboard");
