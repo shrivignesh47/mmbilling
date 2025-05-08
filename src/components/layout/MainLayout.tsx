@@ -12,12 +12,14 @@ interface MainLayoutProps {
   sidebarContent: React.ReactNode;
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
+  shopName?: string; // Make this optional
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({
   sidebarContent,
   sidebarCollapsed,
   toggleSidebar,
+  shopName,
 }) => {
   const { profile, logout } = useAuth();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -33,7 +35,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       >
         <div className="h-16 border-b flex items-center px-4">
           <h1 className="text-lg font-semibold truncate">
-            {sidebarCollapsed ? "POS" : "POS System"}
+            {sidebarCollapsed ? "POS" : shopName || "POS System"}
           </h1>
         </div>
         {sidebarContent}
@@ -43,7 +45,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
         <SheetContent side="left" className="w-64 p-0">
           <div className="h-16 border-b flex items-center px-4">
-            <h1 className="text-lg font-semibold">POS System</h1>
+            <h1 className="text-lg font-semibold">{shopName || "POS System"}</h1>
           </div>
           {sidebarContent}
         </SheetContent>

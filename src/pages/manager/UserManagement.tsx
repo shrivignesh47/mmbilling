@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Plus,
@@ -74,7 +73,9 @@ const UserManagement: React.FC = () => {
         .neq('role', 'owner');  // Don't show owners
       
       if (error) throw error;
-      setUsers(data as UserProfile[] || []);
+      
+      // Cast the data to the UserProfile type since we know the structure
+      setUsers((data || []) as UserProfile[]);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to fetch users');
@@ -422,94 +423,6 @@ const UserManagement: React.FC = () => {
               </Form>
             </DialogContent>
           </Dialog>
-          
-          {/* Edit User Dialog */}
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Edit Staff Member</DialogTitle>
-                <DialogDescription>
-                  Update staff details and permissions.
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...editForm}>
-                <form onSubmit={editForm.handleSubmit(handleEditUser)} className="space-y-4">
-                  <FormField
-                    control={editForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter full name" {...field} required />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Role</FormLabel>
-                        <select
-                          {...field}
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <option value="cashier">Cashier</option>
-                          {roles.map((role) => (
-                            <option key={role.id} value={role.id}>
-                              {role.name}
-                            </option>
-                          ))}
-                        </select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="custom_permissions"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Custom Permissions</FormLabel>
-                        <div className="border rounded-md p-3 space-y-2">
-                          {getAllPermissions().map(permission => (
-                            <div key={permission.code} className="flex items-center">
-                              <input
-                                type="checkbox"
-                                id={`edit-${permission.code}`}
-                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                checked={field.value?.includes(permission.code)}
-                                onChange={e => {
-                                  if (e.target.checked) {
-                                    field.onChange([...(field.value || []), permission.code]);
-                                  } else {
-                                    field.onChange(field.value?.filter(p => p !== permission.code));
-                                  }
-                                }}
-                              />
-                              <label htmlFor={`edit-${permission.code}`} className="ml-2 text-sm">
-                                {permission.name}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <DialogFooter>
-                    <Button type="submit" className="w-full sm:w-auto">Save Changes</Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
         </CardHeader>
 
         <CardContent>
@@ -599,6 +512,96 @@ const UserManagement: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit User Dialog - Fixed by properly nesting inside Dialog component */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Staff Member</DialogTitle>
+            <DialogDescription>
+              Update staff details and permissions.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(handleEditUser)} className="space-y-4">
+                <FormField
+                  control={editForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter full name" {...field} required />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <select
+                        {...field}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="cashier">Cashier</option>
+                        {roles.map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="custom_permissions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Custom Permissions</FormLabel>
+                      <div className="border rounded-md p-3 space-y-2">
+                        {getAllPermissions().map(permission => (
+                          <div key={permission.code} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id={`edit-${permission.code}`}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                              checked={field.value?.includes(permission.code)}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  field.onChange([...(field.value || []), permission.code]);
+                                } else {
+                                  field.onChange(field.value?.filter(p => p !== permission.code));
+                                }
+                              }}
+                            />
+                            <label htmlFor={`edit-${permission.code}`} className="ml-2 text-sm">
+                              {permission.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter>
+                  <Button type="submit" className="w-full sm:w-auto">Save Changes</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

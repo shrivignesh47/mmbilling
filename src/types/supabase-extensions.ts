@@ -1,26 +1,31 @@
 
-import { Database } from "@/integrations/supabase/types";
+// Define role type for profiles
+export type UserRole = "owner" | "manager" | "cashier" | string;
 
-// Extend Supabase types to include our new tables
+// Custom role definitions
 export interface CustomRole {
   id: string;
   name: string;
-  description?: string;
+  description: string | null;
   permissions: string[];
   created_at?: string;
 }
+
+// Notification types
+export type NotificationRecipientType = "role" | "all" | "specific";
 
 export interface Notification {
   id: string;
   title: string;
   message: string;
   sender_id: string;
-  sender_name?: string;
-  recipient_type: "all" | "role" | "specific";
-  role?: string;
-  priority: "low" | "medium" | "high";
+  sender_name: string | null;
   created_at: string;
-  status: "sent" | "delivered" | "failed";
+  status: string;
+  priority: string;
+  recipient_type: NotificationRecipientType;
+  role?: string | null;
+  read?: boolean;
 }
 
 export interface NotificationRecipient {
@@ -29,22 +34,5 @@ export interface NotificationRecipient {
   user_id: string;
   read: boolean;
   created_at: string;
+  notification?: Notification;
 }
-
-export interface User {
-  id: string;
-  name: string;
-  role: string;
-}
-
-export interface Role {
-  id: string;
-  name: string;
-}
-
-// Add these tables to the extended Database interface as needed
-export type TablesInsert<T extends keyof Database["public"]["Tables"]> = 
-  Database["public"]["Tables"][T]["Insert"];
-
-export type TablesRow<T extends keyof Database["public"]["Tables"]> = 
-  Database["public"]["Tables"][T]["Row"];

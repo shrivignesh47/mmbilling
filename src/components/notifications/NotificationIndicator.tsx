@@ -52,8 +52,8 @@ const NotificationIndicator = () => {
   
         // Combine and format notifications
         const allNotifs = [
-          ...(allNotifications || []).map(n => ({ ...n })), 
-          ...(roleNotifications || []).map(n => ({ ...n })),
+          ...(allNotifications || []).map(n => ({ ...n, read: false })), 
+          ...(roleNotifications || []).map(n => ({ ...n, read: false })),
           ...(specificRecipients || []).map(r => ({ 
             ...r.notification, 
             recipient_id: r.id,
@@ -66,7 +66,7 @@ const NotificationIndicator = () => {
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 5);
         
-        setNotifications(sortedNotifications);
+        setNotifications(sortedNotifications as Array<Notification & { recipient_id?: string }>);
         setUnreadCount(sortedNotifications.filter(n => !n.read).length);
       } catch (error) {
         console.error('Error fetching notifications:', error);
