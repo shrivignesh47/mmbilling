@@ -18,30 +18,7 @@ import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import NotificationForm from "@/components/notifications/NotificationForm";
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  sender_id: string;
-  sender_name?: string;
-  recipient_type: "all" | "role" | "specific";
-  role?: string;
-  priority: "low" | "medium" | "high";
-  created_at: string;
-  status: "sent" | "delivered" | "failed";
-}
-
-interface User {
-  id: string;
-  name: string;
-  role: string;
-}
-
-interface Role {
-  id: string;
-  name: string;
-}
+import { Notification, Role, User } from "@/types/supabase-extensions";
 
 const NotificationsPage: React.FC = () => {
   const { profile } = useAuth();

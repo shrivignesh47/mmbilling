@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      custom_roles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          permissions: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          permissions?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          permissions?: string[] | null
+        }
+        Relationships: []
+      }
       inventory_logs: {
         Row: {
           action: string
@@ -56,6 +80,77 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_recipients: {
+        Row: {
+          created_at: string | null
+          id: string
+          notification_id: string | null
+          read: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notification_id?: string | null
+          read?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notification_id?: string | null
+          read?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_recipients_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          priority: string
+          recipient_type: string
+          role: string | null
+          sender_id: string
+          sender_name: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          priority: string
+          recipient_type: string
+          role?: string | null
+          sender_id: string
+          sender_name?: string | null
+          status: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          priority?: string
+          recipient_type?: string
+          role?: string | null
+          sender_id?: string
+          sender_name?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {

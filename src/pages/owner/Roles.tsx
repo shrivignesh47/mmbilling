@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Plus,
@@ -26,8 +25,16 @@ import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import RoleForm from "@/components/roles/RoleForm";
-import { CustomRole, Permission } from "@/contexts/auth/types";
+import { CustomRole } from "@/types/supabase-extensions";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Define Permission type here to match what's used in RoleForm
+interface Permission {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+}
 
 const SYSTEM_PERMISSIONS: Permission[] = [
   { id: "1", code: "manage_users", name: "Manage Users", description: "Create, edit, and delete user accounts" },
