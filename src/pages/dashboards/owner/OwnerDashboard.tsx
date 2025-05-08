@@ -6,6 +6,7 @@ import { StatCard } from "@/components/dashboards/DashboardCards";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ShopSummary {
   name: string;
@@ -23,6 +24,9 @@ const OwnerDashboard: React.FC = () => {
   const [cashierCount, setCashierCount] = useState(0);
   const [recentActivity, setRecentActivity] = useState<{action: string, description: string, date: string}[]>([]);
   const [topShops, setTopShops] = useState<ShopSummary[]>([]);
+  // Add state for dialog
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedShop, setSelectedShop] = useState<ShopSummary | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -85,6 +89,11 @@ const OwnerDashboard: React.FC = () => {
 
     fetchDashboardData();
   }, []);
+
+  const handleShopClick = (shop: ShopSummary) => {
+    setSelectedShop(shop);
+    setIsDialogOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -182,7 +191,11 @@ const OwnerDashboard: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               {topShops.map((shop, i) => (
-                <div key={i} className="flex items-center justify-between border-b pb-2 last:border-0">
+                <div 
+                  key={i} 
+                  className="flex items-center justify-between border-b pb-2 last:border-0 cursor-pointer hover:bg-muted/50 rounded px-2"
+                  onClick={() => handleShopClick(shop)}
+                >
                   <div>
                     <p className="text-sm font-medium">{shop.name}</p>
                     <p className="text-xs text-muted-foreground">${shop.revenue.toLocaleString()}</p>
@@ -202,6 +215,36 @@ const OwnerDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Shop Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedShop?.name || 'Shop Details'}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {selectedShop && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium">Monthly Revenue</p>
+                  <p className="text-2xl font-bold">${selectedShop.revenue.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Growth Trend</p>
+                  <p className={`text-lg font-semibold ${selectedShop.trend >= 0 ? "text-success" : "text-destructive"}`}>
+                    {selectedShop.trend >= 0 ? "+" : ""}{selectedShop.trend}%
+                  </p>
+                </div>
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    More detailed analytics for this shop will be available in a future update.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
