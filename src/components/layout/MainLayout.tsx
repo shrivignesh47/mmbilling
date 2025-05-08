@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Menu, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
 import NotificationIndicator from "@/components/notifications/NotificationIndicator";
@@ -55,7 +55,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       <div className="flex-1 flex flex-col min-h-screen">
         <header className="h-16 border-b flex items-center justify-between px-4">
           <div className="flex items-center">
-            <SheetTrigger
+            <button
               onClick={() => setIsMobileSidebarOpen(true)}
               className={cn(
                 buttonVariants({ variant: "ghost", size: "icon" }),
@@ -64,7 +64,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             >
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle Menu</span>
-            </SheetTrigger>
+            </button>
             <button
               onClick={toggleSidebar}
               className={cn(
