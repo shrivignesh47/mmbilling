@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import NotificationForm from "@/components/notifications/NotificationForm";
 import { User } from "@/types/supabase-extensions"; 
 import { Bell, Send } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface NotificationFormValues {
   title: string;
@@ -16,12 +17,22 @@ interface NotificationFormValues {
   role?: string;
   recipients?: string[];
   priority: "high" | "medium" | "low";
+  send_email?: boolean;
+}
+
+interface Role {
+  id: string;
+  name: string;
 }
 
 const StaffNotifications: React.FC = () => {
   const { profile } = useAuth();
   const [shopStaff, setShopStaff] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [roles, setRoles] = useState<Role[]>([
+    { id: 'cashier', name: 'Cashier' }
+  ]);
 
   // Fetch all staff members for this shop
   const fetchShopStaff = async () => {
@@ -129,6 +140,7 @@ const StaffNotifications: React.FC = () => {
       }
 
       toast.success('Notification sent successfully');
+      setIsFormOpen(false);
     } catch (error: any) {
       console.error('Error sending notification:', error);
       toast.error(error.message || 'Failed to send notification');
@@ -152,10 +164,27 @@ const StaffNotifications: React.FC = () => {
           {isLoading ? (
             <div className="text-center py-8">Loading staff members...</div>
           ) : shopStaff.length > 0 ? (
-            <NotificationForm 
-              users={shopStaff} 
-              onSubmit={handleSendNotification}
-            />
+            <div>
+              <Button onClick={() => setIsFormOpen(true)}>
+                <Bell className="mr-2 h-4 w-4" />
+                Create New Notification
+              </Button>
+              
+              {/* Dialog for the notification form */}
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Send Notification</DialogTitle>
+                  </DialogHeader>
+                  <NotificationForm 
+                    users={shopStaff} 
+                    roles={roles}
+                    onSubmit={handleSendNotification}
+                    onCancel={() => setIsFormOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           ) : (
             <div className="text-center py-8">
               <Bell className="h-12 w-12 mx-auto text-muted-foreground" />
