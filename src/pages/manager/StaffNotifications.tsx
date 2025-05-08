@@ -9,6 +9,15 @@ import NotificationForm from "@/components/notifications/NotificationForm";
 import { User } from "@/types/supabase-extensions"; 
 import { Bell, Send } from "lucide-react";
 
+interface NotificationFormValues {
+  title: string;
+  message: string;
+  recipient_type: "role" | "all" | "specific";
+  role?: string;
+  recipients?: string[];
+  priority: "high" | "medium" | "low";
+}
+
 const StaffNotifications: React.FC = () => {
   const { profile } = useAuth();
   const [shopStaff, setShopStaff] = useState<User[]>([]);
@@ -41,33 +50,33 @@ const StaffNotifications: React.FC = () => {
     fetchShopStaff();
   }, [profile?.shop_id]);
 
-  const handleSendNotification = async (notificationData: any) => {
+  const handleSendNotification = async (formValues: NotificationFormValues): Promise<boolean> => {
     try {
       // Create the notification
-      const { data: notificationData, error: notificationError } = await supabase
+      const { data: notification, error: notificationError } = await supabase
         .from('notifications')
         .insert({
-          title: notificationData.title,
-          message: notificationData.message,
+          title: formValues.title,
+          message: formValues.message,
           sender_id: profile?.id,
           sender_name: profile?.name,
-          recipient_type: notificationData.recipient_type,
-          role: notificationData.role || null,
+          recipient_type: formValues.recipient_type,
+          role: formValues.role || null,
           status: 'sent',
-          priority: notificationData.priority
+          priority: formValues.priority
         })
         .select('id');
 
       if (notificationError) throw notificationError;
 
-      if (!notificationData?.[0]?.id) {
+      if (!notification?.[0]?.id) {
         throw new Error('Failed to create notification');
       }
 
-      const notificationId = notificationData[0].id;
+      const notificationId = notification[0].id;
 
       // Create notification recipients based on the recipient type
-      if (notificationData.recipient_type === 'all') {
+      if (formValues.recipient_type === 'all') {
         // Send to all staff in this shop
         const recipients = shopStaff.map(user => ({
           notification_id: notificationId,
@@ -82,9 +91,9 @@ const StaffNotifications: React.FC = () => {
 
           if (recipientError) throw recipientError;
         }
-      } else if (notificationData.recipient_type === 'specific' && notificationData.recipients) {
+      } else if (formValues.recipient_type === 'specific' && formValues.recipients) {
         // Send to specific users
-        const recipients = notificationData.recipients.map((userId: string) => ({
+        const recipients = formValues.recipients.map((userId: string) => ({
           notification_id: notificationId,
           user_id: userId,
           read: false
@@ -97,10 +106,10 @@ const StaffNotifications: React.FC = () => {
 
           if (recipientError) throw recipientError;
         }
-      } else if (notificationData.recipient_type === 'role' && notificationData.role) {
+      } else if (formValues.recipient_type === 'role' && formValues.role) {
         // Send to users with a specific role
         const filteredStaff = shopStaff.filter(user => 
-          user.role === notificationData.role
+          user.role === formValues.role
         );
 
         const recipients = filteredStaff.map(user => ({
