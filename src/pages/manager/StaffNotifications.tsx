@@ -50,7 +50,8 @@ const StaffNotifications: React.FC = () => {
     fetchShopStaff();
   }, [profile?.shop_id]);
 
-  const handleSendNotification = async (formValues: NotificationFormValues): Promise<boolean> => {
+  // Changed the return type to Promise<void> to match the NotificationForm's expected type
+  const handleSendNotification = async (formValues: NotificationFormValues): Promise<void> => {
     try {
       // Create the notification
       const { data: notification, error: notificationError } = await supabase
@@ -128,11 +129,9 @@ const StaffNotifications: React.FC = () => {
       }
 
       toast.success('Notification sent successfully');
-      return true;
     } catch (error: any) {
       console.error('Error sending notification:', error);
       toast.error(error.message || 'Failed to send notification');
-      return false;
     }
   };
 
