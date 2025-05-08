@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Plus,
@@ -19,8 +20,7 @@ import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
 import { toast } from "sonner";
-import { CustomRole } from "@/types/supabase-extensions";
-import { UserRole } from "@/contexts/auth/types";
+import { CustomRole, UserRole } from "@/types/supabase-extensions";
 
 interface UserProfile {
   id: string;
@@ -74,8 +74,8 @@ const UserManagement: React.FC = () => {
       
       if (error) throw error;
       
-      // Cast the data to the UserProfile type since we know the structure
-      setUsers((data || []) as UserProfile[]);
+      // Cast the data to the UserProfile type with proper type handling
+      setUsers((data || []) as unknown as UserProfile[]);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to fetch users');

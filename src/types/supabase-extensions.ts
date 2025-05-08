@@ -2,6 +2,22 @@
 // Define role type for profiles
 export type UserRole = "owner" | "manager" | "cashier" | string;
 
+// User type for references
+export interface User {
+  id: string;
+  name: string | null;
+  role: UserRole;
+  shop_id?: string | null;
+  shop_name?: string;
+}
+
+// Role type for references
+export interface Role {
+  id: string;
+  name: string;
+  description?: string | null;
+}
+
 // Custom role definitions
 export interface CustomRole {
   id: string;
