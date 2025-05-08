@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Plus,
@@ -11,7 +12,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -35,6 +36,8 @@ interface Permission {
   name: string;
   description: string;
 }
+
+type SystemRoleType = "owner" | "manager" | "cashier";
 
 const SYSTEM_PERMISSIONS: Permission[] = [
   { id: "1", code: "manage_users", name: "Manage Users", description: "Create, edit, and delete user accounts" },
@@ -152,7 +155,7 @@ const RolesPage: React.FC = () => {
       const { data: users, error: usersError } = await supabase
         .from('profiles')
         .select('id, name')
-        .eq('role', roleId);
+        .eq('role', roleId as any);
 
       if (usersError) throw usersError;
 
@@ -260,7 +263,7 @@ const RolesPage: React.FC = () => {
               <div className="mb-8">
                 <h3 className="text-lg font-medium mb-4">System Roles</h3>
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-                  {["owner", "manager", "cashier"].map((role) => (
+                  {(["owner", "manager", "cashier"] as SystemRoleType[]).map((role) => (
                     <Card key={role} className="border border-primary/20 bg-primary/5">
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-center">
