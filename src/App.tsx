@@ -28,7 +28,8 @@ import Settings from "@/pages/owner/Settings";
 import ManagerDashboard from "@/pages/dashboards/manager/ManagerDashboard";
 import Inventory from "@/pages/manager/Inventory";
 import Products from "@/pages/manager/Products";
-import Cashiers from "@/pages/manager/Cashiers";
+import UserManagement from "@/pages/manager/UserManagement";
+import StaffNotifications from "@/pages/manager/StaffNotifications";
 import ManagerSettings from "@/pages/manager/Settings";
 
 // Cashier Pages
@@ -67,7 +68,8 @@ const App = () => (
               <Route path="dashboard" element={<ManagerDashboard />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="products" element={<Products />} />
-              <Route path="cashiers" element={<Cashiers />} />
+              <Route path="staff" element={<UserManagement />} />
+              <Route path="notifications" element={<StaffNotifications />} />
               <Route path="settings" element={<ManagerSettings />} />
               <Route index element={<Navigate to="/manager/dashboard" />} />
             </Route>

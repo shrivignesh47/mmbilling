@@ -1,99 +1,75 @@
 
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { BarChart3, Package, ShoppingBag, LogOut, Settings, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/auth";
-
-interface SidebarItemProps {
-  to: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-  end?: boolean;
-  collapsed?: boolean;
-  onClick?: () => void;
-}
-
-const SidebarItem: React.FC<SidebarItemProps> = ({
-  to,
-  icon: Icon,
-  children,
-  end,
-  collapsed,
-  onClick,
-}) => {
-  if (onClick) {
-    return (
-      <button
-        onClick={onClick}
-        className="sidebar-item w-full text-left"
-      >
-        <Icon size={20} />
-        {!collapsed && <span>{children}</span>}
-      </button>
-    );
-  }
-  
-  return (
-    <NavLink
-      to={to}
-      end={end}
-      className={({ isActive }) =>
-        cn("sidebar-item", isActive && "sidebar-item-active")
-      }
-    >
-      <Icon size={20} />
-      {!collapsed && <span>{children}</span>}
-    </NavLink>
-  );
-};
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingBag,
+  Users,
+  Settings,
+  Bell
+} from "lucide-react";
 
 interface ManagerSidebarProps {
-  collapsed?: boolean;
+  collapsed: boolean;
 }
 
-const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed = false }) => {
-  const { logout, profile } = useAuth();
-  
-  const handleLogout = async () => {
-    await logout();
-  };
-  
+const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed }) => {
+  const sidebarLinks = [
+    {
+      title: "Dashboard",
+      href: "/manager/dashboard",
+      icon: <LayoutDashboard className="h-5 w-5" />,
+    },
+    {
+      title: "Inventory",
+      href: "/manager/inventory",
+      icon: <Package className="h-5 w-5" />,
+    },
+    {
+      title: "Products",
+      href: "/manager/products",
+      icon: <ShoppingBag className="h-5 w-5" />,
+    },
+    {
+      title: "Staff",
+      href: "/manager/staff",
+      icon: <Users className="h-5 w-5" />,
+    },
+    {
+      title: "Notifications",
+      href: "/manager/notifications",
+      icon: <Bell className="h-5 w-5" />,
+    },
+    {
+      title: "Settings",
+      href: "/manager/settings",
+      icon: <Settings className="h-5 w-5" />,
+    },
+  ];
+
   return (
-    <div className="space-y-6 flex flex-col h-full">
-      {!collapsed && (
-        <div className="px-3 py-2">
-          <h2 className="mb-2 px-1 text-lg font-semibold">Manager Dashboard</h2>
-          {profile?.shop_id && (
-            <p className="text-xs text-muted-foreground px-1 truncate">
-              {profile.shop_name || 'Loading shop...'}
-            </p>
-          )}
-        </div>
-      )}
-      
-      <div className="space-y-1 px-1 flex-1">
-        <SidebarItem to="/manager/dashboard" icon={BarChart3} end collapsed={collapsed}>
-          Dashboard
-        </SidebarItem>
-        <SidebarItem to="/manager/products" icon={ShoppingBag} collapsed={collapsed}>
-          Products
-        </SidebarItem>
-        <SidebarItem to="/manager/inventory" icon={Package} collapsed={collapsed}>
-          Inventory
-        </SidebarItem>
-        <SidebarItem to="/manager/cashiers" icon={Users} collapsed={collapsed}>
-          Cashiers
-        </SidebarItem>
-        <SidebarItem to="/manager/settings" icon={Settings} collapsed={collapsed}>
-          Settings
-        </SidebarItem>
-      </div>
-      
-      <div className="mt-auto border-t pt-2">
-        <SidebarItem to="#" icon={LogOut} collapsed={collapsed} onClick={handleLogout}>
-          Logout
-        </SidebarItem>
+    <div className="flex flex-col h-full">
+      <div className={cn("flex-1 py-6 space-y-1", collapsed ? "px-2" : "px-4")}>
+        {sidebarLinks.map((link) => (
+          <NavLink
+            key={link.href}
+            to={link.href}
+            className={({ isActive }) =>
+              cn(
+                "flex items-center py-2 px-3 rounded-md text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted",
+                collapsed ? "justify-center" : ""
+              )
+            }
+          >
+            {link.icon}
+            {!collapsed && <span className="ml-3">{link.title}</span>}
+          </NavLink>
+        ))}
       </div>
     </div>
   );
