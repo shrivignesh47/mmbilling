@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Plus,
@@ -307,7 +306,7 @@ const UserManagement: React.FC = () => {
     setSelectedUser(user);
     editForm.reset({
       name: user.name || '',
-      role: (user.role === 'cashier' ? 'cashier' : user.role) as UserRole,
+      role: user.role as UserRole,
       custom_permissions: user.custom_permissions || []
     });
     setIsEditDialogOpen(true);
@@ -475,7 +474,7 @@ const UserManagement: React.FC = () => {
                             <FormLabel>Role</FormLabel>
                             <Select
                               onValueChange={field.onChange}
-                              defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -817,7 +816,7 @@ const UserManagement: React.FC = () => {
                       <FormLabel>Role</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>

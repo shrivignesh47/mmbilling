@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import ManagerSidebar from "@/components/dashboards/manager/ManagerSidebar";
 import { withAuth } from "@/contexts/auth";
