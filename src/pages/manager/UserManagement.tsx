@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Plus, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +46,7 @@ const UserManagement: React.FC = () => {
       email: "",
       password: "",
       name: "",
-      role: "cashier" as UserRole,
+      role: "cashier" as UserRole, // Default to cashier role
       custom_permissions: [] as string[]
     }
   });

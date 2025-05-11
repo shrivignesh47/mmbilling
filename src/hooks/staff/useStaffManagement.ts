@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
@@ -93,7 +92,7 @@ export const useStaffManagement = () => {
         options: {
           data: {
             name: values.name,
-            role: values.role as UserRole, // Cast to UserRole type
+            role: values.role as UserRole, // Keep role as specified in the form
           }
         }
       });
@@ -109,10 +108,11 @@ export const useStaffManagement = () => {
       const userId = data.user.id;
       
       // Update the profile with role, shop assignment and custom permissions
+      // Make sure we use the role selected in the form, not hardcoded
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
-          role: values.role as UserRole, // Cast to UserRole type
+          role: values.role as UserRole, // Use the exact role from the form
           shop_id: profile?.shop_id || null,
           custom_permissions: values.custom_permissions || []
         })
