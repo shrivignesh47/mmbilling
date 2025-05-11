@@ -99,6 +99,7 @@ const CreateUserForm: React.FC<CreateUserFormProps> = ({ form, permissions, role
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="cashier">Cashier</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
                   {roles.map((role) => (
                     <SelectItem key={role.id} value={role.id}>
                       {role.name}

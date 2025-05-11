@@ -10,6 +10,7 @@ import { AuthProvider } from "@/contexts/auth";
 import OwnerLayout from "@/layouts/OwnerLayout";
 import ManagerLayout from "@/layouts/ManagerLayout";
 import CashierLayout from "@/layouts/CashierLayout";
+import StaffLayout from "@/layouts/StaffLayout";
 
 // Pages
 import Login from "@/pages/auth/Login";
@@ -36,6 +37,10 @@ import ManagerSettings from "@/pages/manager/Settings";
 import CashierDashboard from "@/pages/dashboards/cashier/CashierDashboard";
 import Billing from "@/pages/cashier/Billing";
 import CashierSettings from "@/pages/cashier/Settings";
+
+// Staff Pages
+import StaffDashboard from "@/pages/dashboards/staff/StaffDashboard";
+import StaffSettings from "@/pages/staff/Settings";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +85,13 @@ const App = () => (
               <Route path="billing" element={<Billing />} />
               <Route path="settings" element={<CashierSettings />} />
               <Route index element={<Navigate to="/cashier/dashboard" />} />
+            </Route>
+
+            {/* Staff Routes */}
+            <Route path="/staff" element={<StaffLayout />}>
+              <Route path="dashboard" element={<StaffDashboard />} />
+              <Route path="settings" element={<StaffSettings />} />
+              <Route index element={<Navigate to="/staff/dashboard" />} />
             </Route>
 
             {/* Catch-all route */}

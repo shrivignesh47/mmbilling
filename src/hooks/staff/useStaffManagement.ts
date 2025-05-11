@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
@@ -108,7 +109,6 @@ export const useStaffManagement = () => {
       const userId = data.user.id;
       
       // Update the profile with role, shop assignment and custom permissions
-      // Make sure we use the role selected in the form, not hardcoded
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
@@ -261,7 +261,13 @@ export const useStaffManagement = () => {
 
   // Calculate statistics
   const cashierCount = users.filter(user => user.role === 'cashier').length;
-  const customRoleCount = users.filter(user => user.role !== 'cashier' && user.role !== 'manager' && user.role !== 'owner').length;
+  const staffCount = users.filter(user => user.role === 'staff').length;
+  const customRoleCount = users.filter(user => 
+    user.role !== 'cashier' && 
+    user.role !== 'manager' && 
+    user.role !== 'owner' && 
+    user.role !== 'staff'
+  ).length;
 
   return {
     users,
@@ -273,6 +279,7 @@ export const useStaffManagement = () => {
     setSelectedUser,
     permissions,
     cashierCount,
+    staffCount,
     customRoleCount,
     handleCreateUser,
     handleEditUser,

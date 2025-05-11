@@ -1,7 +1,7 @@
 
 import { User, Session } from "@supabase/supabase-js";
 
-export type UserRole = "owner" | "manager" | "cashier" | string;
+export type UserRole = "owner" | "manager" | "cashier" | "staff" | string;
 
 export interface Permission {
   id: string;

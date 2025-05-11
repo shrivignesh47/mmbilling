@@ -30,6 +30,9 @@ export const withAuth = (Component: React.ComponentType, requiredRole?: UserRole
               case "cashier":
                 navigate("/cashier/dashboard");
                 break;
+              case "staff":
+                navigate("/staff/dashboard");
+                break;
               default:
                 navigate("/login");
             }
