@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
 import { toast } from "sonner";
-import { UserProfile, Permission } from "@/types/staff";
+import { UserProfile, Permission, UserRole } from "@/types/staff";
 import { CustomRole } from "@/types/supabase-extensions";
 
 export const useStaffManagement = () => {
@@ -93,7 +93,7 @@ export const useStaffManagement = () => {
         options: {
           data: {
             name: values.name,
-            role: values.role, // Ensure role is set in metadata
+            role: values.role as UserRole, // Cast to UserRole type
           }
         }
       });
@@ -112,7 +112,7 @@ export const useStaffManagement = () => {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
-          role: values.role,
+          role: values.role as UserRole, // Cast to UserRole type
           shop_id: profile?.shop_id || null,
           custom_permissions: values.custom_permissions || []
         })
@@ -139,7 +139,7 @@ export const useStaffManagement = () => {
         .from('profiles')
         .update({ 
           name: values.name,
-          role: values.role,
+          role: values.role as UserRole, // Cast to UserRole type
           custom_permissions: values.custom_permissions || []
         })
         .eq('id', selectedUser.id);

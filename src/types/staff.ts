@@ -1,8 +1,10 @@
 
+export type UserRole = "owner" | "manager" | "cashier" | string;
+
 export interface UserProfile {
   id: string;
   name: string | null;
-  role: string;
+  role: UserRole;
   custom_permissions?: string[];
 }
 
