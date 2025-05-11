@@ -92,7 +92,7 @@ export const useStaffManagement = () => {
         options: {
           data: {
             name: values.name,
-            role: values.role as UserRole, // Keep role as specified in the form
+            role: values.role, // Keep role as specified in the form
           }
         }
       });
@@ -112,7 +112,7 @@ export const useStaffManagement = () => {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
-          role: values.role as UserRole, // Use the exact role from the form
+          role: values.role, // Use the exact role from the form without type casting
           shop_id: profile?.shop_id || null,
           custom_permissions: values.custom_permissions || []
         })
@@ -139,7 +139,7 @@ export const useStaffManagement = () => {
         .from('profiles')
         .update({ 
           name: values.name,
-          role: values.role as UserRole, // Cast to UserRole type
+          role: values.role, // Use the role without type casting
           custom_permissions: values.custom_permissions || []
         })
         .eq('id', selectedUser.id);
@@ -261,7 +261,7 @@ export const useStaffManagement = () => {
 
   // Calculate statistics
   const cashierCount = users.filter(user => user.role === 'cashier').length;
-  const customRoleCount = users.filter(user => user.role !== 'cashier' && user.role !== 'manager').length;
+  const customRoleCount = users.filter(user => user.role !== 'cashier' && user.role !== 'manager' && user.role !== 'owner').length;
 
   return {
     users,
