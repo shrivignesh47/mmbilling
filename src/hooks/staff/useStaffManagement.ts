@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect , useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
 import { toast } from "sonner";
@@ -86,6 +86,11 @@ export const useStaffManagement = () => {
 
   const handleCreateUser = async (values: any) => {
     try {
+      // Check if the role is a custom role (UUID format) or a standard role
+      const isCustomRole = roles.some(role => role.id === values.role);
+      // Use the selected role value directly if it's a standard role (cashier or staff)
+      const roleValue = isCustomRole ? values.role : values.role;
+      
       // Create the auth user
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
@@ -93,7 +98,7 @@ export const useStaffManagement = () => {
         options: {
           data: {
             name: values.name,
-            role: values.role, // Keep role as specified in the form
+            role: roleValue
           }
         }
       });
@@ -112,7 +117,7 @@ export const useStaffManagement = () => {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
-          role: values.role, // Use the exact role from the form without type casting
+          role: roleValue,
           shop_id: profile?.shop_id || null,
           custom_permissions: values.custom_permissions || []
         })
@@ -134,12 +139,16 @@ export const useStaffManagement = () => {
     if (!selectedUser) return false;
     
     try {
+      // Check if the role is a custom role (UUID format) or a standard role
+      const isCustomRole = roles.some(role => role.id === values.role);
+      const roleValue = values.role; // Store the original role value (either ID or string)
+      
       // Update the profile
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
           name: values.name,
-          role: values.role, // Use the role without type casting
+          role: roleValue, // Use the exact role value without modification
           custom_permissions: values.custom_permissions || []
         })
         .eq('id', selectedUser.id);
@@ -209,7 +218,7 @@ export const useStaffManagement = () => {
         const { data: usersWithRole } = await supabase
           .from('profiles')
           .select('id')
-          .eq('role', roleId);
+          .eq('role', roleId as any); // Type assertion to handle custom role IDs
         
         if (usersWithRole && usersWithRole.length > 0) {
           toast.error('Cannot delete role that is assigned to users');

@@ -34,7 +34,8 @@ export const withAuth = (Component: React.ComponentType, requiredRole?: UserRole
                 navigate("/staff/dashboard");
                 break;
               default:
-                navigate("/login");
+                // For custom roles (UUID format), redirect to staff dashboard
+                navigate("/staff/dashboard");
             }
           }
         }

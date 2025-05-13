@@ -153,6 +153,9 @@ const ShopLogin: React.FC = () => {
         navigate("/manager/dashboard");
       } else if (profile.role === "cashier") {
         navigate("/cashier/dashboard");
+      } else if (profile.role === "staff" || profile.role.length > 10) {
+        // Handle both explicit staff role and custom roles (UUID format)
+        navigate("/staff/dashboard");
       } else {
         navigate("/login");
       }

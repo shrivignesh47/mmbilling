@@ -215,6 +215,7 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
           shop_id: string | null
           updated_at: string | null
+          custom_role_id: string | null // Added custom_role_id column
         }
         Insert: {
           created_at?: string | null
@@ -225,6 +226,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           shop_id?: string | null
           updated_at?: string | null
+          custom_role_id?: string | null // Added custom_role_id column
         }
         Update: {
           created_at?: string | null
@@ -235,6 +237,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           shop_id?: string | null
           updated_at?: string | null
+          custom_role_id?: string | null // Added custom_role_id column
         }
         Relationships: [
           {

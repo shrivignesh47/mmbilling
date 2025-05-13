@@ -68,8 +68,12 @@ const Login: React.FC = () => {
           case "cashier":
             navigate("/cashier/dashboard");
             break;
+          case "staff":
+            navigate("/staff/dashboard");
+            break;
           default:
-            navigate("/login");
+            // For custom roles (UUID format), redirect to staff dashboard
+            navigate("/staff/dashboard");
             break;
         }
       }

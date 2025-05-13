@@ -47,6 +47,7 @@ const UserManagement: React.FC = () => {
       password: "",
       name: "",
       role: "cashier" as UserRole, // Default to cashier role
+      custom_role_id: null, // Added custom_role_id field
       custom_permissions: [] as string[]
     }
   });
@@ -55,6 +56,7 @@ const UserManagement: React.FC = () => {
     defaultValues: {
       name: "",
       role: "cashier" as UserRole,
+      custom_role_id: null, // Added custom_role_id field
       custom_permissions: [] as string[]
     }
   });
@@ -72,13 +74,20 @@ const UserManagement: React.FC = () => {
     editForm.reset({
       name: user.name || '',
       role: user.role as UserRole,
+      custom_role_id: user.custom_role_id || null, // Reset custom_role_id
       custom_permissions: user.custom_permissions || []
     });
     setIsEditDialogOpen(true);
   };
 
   const onCreateUserSubmit = async (values: any) => {
-    const success = await handleCreateUser(values);
+    const roleValue = values.role; // Directly use the selected role
+  
+    const success = await handleCreateUser({
+      ...values,
+      role: roleValue, // Ensure this is correctly set
+    });
+  
     if (success) {
       createForm.reset();
       setIsCreateDialogOpen(false);

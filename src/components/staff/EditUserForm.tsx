@@ -13,6 +13,7 @@ interface EditUserFormProps {
   form: UseFormReturn<{
     name: string;
     role: UserRole;
+    custom_role_id: string | null; // Added custom_role_id field
     custom_permissions: string[];
   }>;
   permissions: Permission[];
@@ -55,6 +56,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ form, permissions, roles, o
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="cashier">Cashier</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
                   {roles.map((role) => (
                     <SelectItem key={role.id} value={role.id}>
                       {role.name}
@@ -62,6 +64,19 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ form, permissions, roles, o
                   ))}
                 </SelectContent>
               </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="custom_role_id" // Added custom_role_id field
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Custom Role ID (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter custom role ID" {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

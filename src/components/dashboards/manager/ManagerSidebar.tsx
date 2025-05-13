@@ -38,6 +38,11 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed }) => {
       icon: <Users className="h-5 w-5" />,
     },
     {
+      title: "Cashier Activity",
+      href: "/manager/cashiers", // Updated to point to the Cashiers page
+      icon: <Users className="h-5 w-5" />,
+    },
+    {
       title: "Notifications",
       href: "/manager/notifications",
       icon: <Bell className="h-5 w-5" />,
@@ -46,7 +51,8 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed }) => {
       title: "Settings",
       href: "/manager/settings",
       icon: <Settings className="h-5 w-5" />,
-    },
+    }
+
   ];
 
   return (
