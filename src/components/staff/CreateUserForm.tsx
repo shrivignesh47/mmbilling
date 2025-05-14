@@ -15,7 +15,7 @@ interface CreateUserFormProps {
     password: string;
     name: string;
     role: UserRole;
-    custom_role_id: string | null; // Added custom_role_id field
+    custom_role_id: string | null;
     custom_permissions: string[];
   }>;
   permissions: Permission[];

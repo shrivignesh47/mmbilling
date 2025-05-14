@@ -251,6 +251,8 @@ export const useStaffManagement = () => {
     permissionSet.add('sell_products');
     permissionSet.add('view_inventory');
     permissionSet.add('manage_inventory');
+    permissionSet.add('Transactions.view');
+    permissionSet.add('Sales.view');
     
     // Add permissions from existing roles
     roles.forEach(role => {

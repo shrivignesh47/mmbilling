@@ -11,4 +11,14 @@ export interface UserProfile {
 export interface Permission {
   code: string;
   name: string;
+  description?: string;
 }
+
+// Add the new permission to your list of permissions
+export const STANDARD_PERMISSIONS: Permission[] = [
+  {
+    code: "transactions.view",
+    name: "View Transactions",
+    description: "Allows viewing transaction history and details"
+  }
+];

@@ -47,7 +47,7 @@ export interface TransactionResponse {
   transaction_id: string;
   created_at: string;
   amount: number;
-  items: any;
+  items: TransactionItem[]; // Define items as an array of TransactionItem
   payment_method: string;
   payment_details?: any;
   cashier_id: string;
@@ -57,4 +57,10 @@ export interface TransactionResponse {
 export interface ShopDetails {
   name: string;
   address: string;
+}
+
+export interface TransactionItem {
+  productId: string;
+  quantity: number;
+  // Add other properties if needed
 }

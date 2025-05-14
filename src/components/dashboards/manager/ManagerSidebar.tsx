@@ -38,6 +38,16 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed }) => {
       icon: <Users className="h-5 w-5" />,
     },
     {
+      title: "Transactions",
+      href: "/manager/Transactions",
+      icon: <Users className="h-5 w-5" />,
+    },
+    {
+      title: "SalesReport",
+      href: "/manager/SalesReport",
+      icon: <Users className="h-5 w-5" />,
+    },
+    {
       title: "Cashier Activity",
       href: "/manager/cashiers", // Updated to point to the Cashiers page
       icon: <Users className="h-5 w-5" />,

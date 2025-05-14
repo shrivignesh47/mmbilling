@@ -32,6 +32,9 @@ import UserManagement from "@/pages/manager/UserManagement";
 import StaffNotifications from "@/pages/manager/StaffNotifications";
 import ManagerSettings from "@/pages/manager/Settings";
 import Cashiers from "@/pages/manager/Cashiers";
+import TransactionHistory from "@/pages/manager/TransactionHistory";
+
+
 
 // Cashier Pages
 import CashierDashboard from "@/pages/dashboards/cashier/CashierDashboard";
@@ -43,7 +46,7 @@ import StaffDashboard from "@/pages/dashboards/staff/StaffDashboard";
 import StaffSettings from "@/pages/staff/Settings";
 // Ensure Inventory component is imported for staff
 import StaffInventory from "@/pages/staff/Inventory"; // Ensure this path is correct
-
+import SalesReport from  "@/components/staff/SalesReport";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -88,6 +91,8 @@ const App = () => {
                 <Route path="staff" element={<UserManagement />} />
                 <Route path="notifications" element={<StaffNotifications />} />
                 <Route path="settings" element={<ManagerSettings />} />
+                <Route path="transactions" element={<TransactionHistory   />} />
+                <Route path="SalesReport" element={<SalesReport/>} />
                 <Route index element={<Navigate to="/manager/dashboard" />} />
               </Route>
 
@@ -103,7 +108,8 @@ const App = () => {
               <Route path="/staff" element={<StaffLayout />}>
                 <Route path="dashboard" element={<StaffDashboard />} />
                 <Route path="settings" element={<StaffSettings />} />
-
+                <Route path="transactions" element={<TransactionHistory   />} />
+                <Route path="SalesReport" element={<SalesReport/>} />
                     <Route path="inventory" element={<StaffInventory />} />
                     <Route path="products" element={<Products />} />
                 <Route index element={<Navigate to="/staff/dashboard" />} />

@@ -36,7 +36,7 @@ interface Permission {
   description: string;
 }
 
-type SystemRoleType = "owner" | "manager" | "cashier";
+type SystemRoleType = "owner" | "manager" | "cashier" |"staff"|"sales";
 
 const SYSTEM_PERMISSIONS: Permission[] = [
   { id: "1", code: "manage_users", name: "Manage Users", description: "Create, edit, and delete user accounts" },
@@ -46,6 +46,7 @@ const SYSTEM_PERMISSIONS: Permission[] = [
   { id: "5", code: "process_sales", name: "Process Sales", description: "Create and complete sales transactions" },
   { id: "6", code: "manage_settings", name: "Manage Settings", description: "Change system and shop settings" },
   { id: "7", code: "view_dashboard", name: "View Dashboard", description: "Access the dashboard and statistics" },
+  { id: "8", code: "transactions.view", name: "View Transactions", description: "Allows viewing transaction history and details" },
 ];
 
 const RolesPage: React.FC = () => {
@@ -274,7 +275,7 @@ const RolesPage: React.FC = () => {
                         <p className="text-sm text-muted-foreground">
                           {role === "owner" && "Full access to all system features and settings."}
                           {role === "manager" && "Manage shop inventory, products and cashiers."}
-                          {role === "cashier" && "Process sales and view assigned shop products."}
+                          {role === "cashier" && "Process sales and view assigned shop products."} 
                         </p>
                         <div className="mt-4 flex flex-wrap gap-2">
                           {role === "owner" && SYSTEM_PERMISSIONS.map(p => (
@@ -286,6 +287,11 @@ const RolesPage: React.FC = () => {
                             </Badge>
                           ))}
                           {role === "cashier" && ["process_sales", "view_reports"].map(code => (
+                            <Badge key={code} variant="secondary" className="text-xs">
+                              {SYSTEM_PERMISSIONS.find(p => p.code === code)?.name || code}
+                            </Badge>
+                          ))}
+                          {role === "sales" && ["transactions.view", "view_reports"].map(code => (
                             <Badge key={code} variant="secondary" className="text-xs">
                               {SYSTEM_PERMISSIONS.find(p => p.code === code)?.name || code}
                             </Badge>

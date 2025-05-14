@@ -48,7 +48,7 @@ const Inventory: React.FC = () => {
 
   useEffect(() => {
     if (profile?.shop_id) {
-      console.log("Using Shop ID:", profile.shop_id); // Debug: Log shop_id
+      // console.log("Using Shop ID:", profile.shop_id); // Debug: Log shop_id
       fetchProducts();
     }
   }, [profile?.shop_id]);
@@ -66,14 +66,14 @@ const Inventory: React.FC = () => {
         .from("products")
         .select("*")
         .eq("shop_id", profile.shop_id);
-        console.log(profile.shop_id)
+        // console.log(profile.shop_id)
       
       if (error) {
         console.error("Supabase Error:", error); // Log Supabase error
         throw error;
       }
       
-      console.log("Fetched Products:", data); // Debug: Log fetched products
+      // console.log("Fetched Products:", data); // Debug: Log fetched products
       setProducts(data || []);
       setFilteredProducts(data || []);
     } catch (error: any) {
@@ -139,9 +139,6 @@ const Inventory: React.FC = () => {
   const lowStockCount = products.filter(product => product.stock > 0 && product.stock <= 5).length;
   const outOfStockCount = products.filter(product => product.stock === 0).length;
 
-  console.log("Total Stock:", totalStock); // Debug: Log total stock
-  console.log("Low Stock Count:", lowStockCount); // Debug: Log low stock count
-  console.log("Out of Stock Count:", outOfStockCount); // Debug: Log out of stock count
 
   // Format currency to Rupees
   const formatCurrency = (amount: number) => {
@@ -199,7 +196,7 @@ const Inventory: React.FC = () => {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button onClick={() => navigate('/manager/products')}>
+            <Button onClick={() => navigate('/staff/products')}>
               <Plus className="mr-2 h-4 w-4" />
               Add Product
             </Button>

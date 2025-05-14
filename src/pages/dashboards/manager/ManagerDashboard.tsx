@@ -181,7 +181,7 @@ const ManagerDashboard: React.FC = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Today's Sales"
-            value={`$${todaySales.toFixed(2)}`}
+            value={`₹${todaySales.toFixed(2)}`}
             icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
             description={`${transactionCount} transactions`}
           />
