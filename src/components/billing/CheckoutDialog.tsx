@@ -99,7 +99,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
         <div className="space-y-4 py-2">
           <div className="flex justify-between font-medium">
             <span>Total Amount:</span>
-            <span>${totalAmount.toFixed(2)}</span>
+            <span>₹{totalAmount.toFixed(2)}</span>
           </div>
           
           <Tabs defaultValue="cash" onValueChange={(val) => setPaymentMethod(val as 'cash' | 'card' | 'upi')}>
@@ -125,7 +125,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
               {parseFloat(cashAmount) > totalAmount && (
                 <div className="flex justify-between pt-2 border-t">
                   <span>Change:</span>
-                  <span>${(parseFloat(cashAmount) - totalAmount).toFixed(2)}</span>
+                  <span>₹{(parseFloat(cashAmount) - totalAmount).toFixed(2)}</span>
                 </div>
               )}
             </TabsContent>

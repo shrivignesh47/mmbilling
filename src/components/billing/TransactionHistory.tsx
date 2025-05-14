@@ -48,7 +48,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                     <tr key={transaction.id} className="border-b">
                       <td className="py-3 px-4 font-mono text-xs">{transaction.transaction_id}</td>
                       <td className="py-3 px-4">{formatDate(transaction.created_at)}</td>
-                      <td className="py-3 px-4 text-right">${transaction.amount.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right">₹{transaction.amount.toFixed(2)}</td>
                       <td className="py-3 px-4 text-center capitalize">{formatPaymentMethod(transaction.payment_method)}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-center">

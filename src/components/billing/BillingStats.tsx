@@ -15,7 +15,7 @@ const BillingStats: React.FC<BillingStatsProps> = ({ dailySaleCount, dailyRevenu
       </div>
       <div className="text-right ml-6">
         <div className="text-sm text-muted-foreground">Today's Revenue</div>
-        <div className="text-xl font-bold text-green-600">${dailyRevenue.toFixed(2)}</div>
+        <div className="text-xl font-bold text-green-600"> ₹{dailyRevenue.toFixed(2)}</div>
       </div>
     </div>
   );

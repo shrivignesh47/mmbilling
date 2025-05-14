@@ -61,7 +61,7 @@ const CashierActivity: React.FC<CashierActivityProps> = ({ cashiers, isLoading }
       'Last Login Time': cashier.last_login ? formatTime(cashier.last_login) : 'Not logged in',
       'Last Logout Date': cashier.last_logout ? formatDate(cashier.last_logout) : 'Not logged out',
       'Last Logout Time': cashier.last_logout ? formatTime(cashier.last_logout) : 'Not logged out',
-      'Daily Sales Amount': `$${cashier.daily_sales.toFixed(2)}`,
+      'Daily Sales Amount': `₹{cashier.daily_sales.toFixed(2)}`,
       'Daily Transactions': cashier.daily_transactions || 0
     }));
     
@@ -114,7 +114,7 @@ const CashierActivity: React.FC<CashierActivityProps> = ({ cashiers, isLoading }
                   </div>
                   <div className="flex items-center">
                     <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" />
-                    <span>Sales: ${cashier.daily_sales.toFixed(2)}</span>
+                    <span>Sales: ₹{cashier.daily_sales.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center">
                     <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" />

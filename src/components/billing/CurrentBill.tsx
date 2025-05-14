@@ -64,7 +64,7 @@ const CurrentBill: React.FC<CurrentBillProps> = ({
       <CardFooter className="flex flex-col space-y-4">
         <div className="flex items-center justify-between w-full border-t pt-4">
           <span className="font-semibold text-lg">Total:</span>
-          <span className="font-bold text-lg">${getTotalAmount().toFixed(2)}</span>
+          <span className="font-bold text-lg">₹{getTotalAmount().toFixed(2)}</span>
         </div>
         <Button 
           className="w-full" 

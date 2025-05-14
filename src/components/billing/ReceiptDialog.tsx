@@ -2,10 +2,11 @@
 import React, { forwardRef } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Printer } from "lucide-react";
+import { Download, Printer, Share2 } from "lucide-react";
 import { Transaction } from "./types";
 import { formatQuantityWithUnit, UnitType } from "@/components/utils/UnitUtils";
 import { formatPaymentMethod } from "@/components/utils/BillingUtils";
+import { toast } from 'sonner';
 
 interface ReceiptDialogProps {
   isOpen: boolean;
@@ -63,6 +64,23 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({
   const changeInfo = getChangeAmount();
   const reference = getReference();
 
+  const handleWhatsAppShare = async () => {
+    try {
+      // First, trigger the download to get the PDF
+      await onDownload();
+      
+      // Create the WhatsApp share URL
+      const message = encodeURIComponent(`Receipt from ${shopName || 'Shop'}\nTransaction #${receiptData?.transaction_id}`);
+      const whatsappUrl = `https://web.whatsapp.com/send?text=${message}`;
+      
+      // Open WhatsApp Web in a new window
+      window.open(whatsappUrl, '_blank');
+    } catch (error) {
+      console.error('Error sharing via WhatsApp:', error);
+      toast.error('Failed to share receipt via WhatsApp');
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -104,7 +122,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({
                       {item.unitType ? formatQuantityWithUnit(item.quantity, item.unitType as UnitType) : item.quantity}
                     </div>
                     <div className="text-right">
-                      ${(item.price * item.quantity).toFixed(2)}
+                    ₹{(item.price * item.quantity).toFixed(2)}
                     </div>
                   </div>
                 ))}
@@ -113,7 +131,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({
               <div className="border-t mt-4 pt-2">
                 <div className="flex justify-between font-medium">
                   <span>Total:</span>
-                  <span>${receiptData.amount.toFixed(2)}</span>
+                  <span>₹{receiptData.amount.toFixed(2)}</span>
                 </div>
                 
                 <div className="payment-info mt-4 text-sm">
@@ -124,14 +142,14 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({
                   
                   {changeInfo && (
                     <>
-                      <div className="flex justify-between mt-1">
+                      {/* <div className="flex justify-between mt-1">
                         <span>Amount Paid:</span>
-                        <span>${changeInfo.amountPaid.toFixed(2)}</span>
+                        <span>₹{changeInfo.amountPaid.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between mt-1">
                         <span>Change:</span>
-                        <span>${changeInfo.changeAmount.toFixed(2)}</span>
-                      </div>
+                        <span>₹{changeInfo.changeAmount.toFixed(2)}</span>
+                      </div> */}
                     </>
                   )}
                   
@@ -151,7 +169,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({
               )}
               
               <div className="text-center mt-4 text-sm">
-                <p>Thank you for your business!</p>
+                <p>Thank you!</p>
               </div>
             </div>
           </div>
@@ -159,16 +177,16 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({
           <div className="py-4 text-center">No receipt data available</div>
         )}
         
-        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex flex-wrap gap-2">
           <Button 
-            className="w-full" 
+            className="flex-1 min-w-[120px]" 
             variant="outline"
             onClick={onClose}
           >
             Close
           </Button>
           <Button 
-            className="w-full"
+            className="flex-1 min-w-[120px]"
             onClick={() => window.print()}
             disabled={!receiptData}
           >
@@ -176,12 +194,21 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({
             Print
           </Button>
           <Button 
-            className="w-full" 
+            className="flex-1 min-w-[120px]" 
             onClick={onDownload}
             disabled={!receiptData}
           >
             <Download className="mr-2 h-4 w-4" />
             Download
+          </Button>
+          <Button 
+            className="flex-1 min-w-[120px]"
+            onClick={handleWhatsAppShare}
+            disabled={!receiptData}
+            variant="default"
+          >
+            <Share2 className="mr-2 h-4 w-4" />
+            WhatsApp
           </Button>
         </DialogFooter>
       </DialogContent>

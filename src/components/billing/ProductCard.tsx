@@ -29,7 +29,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToBill }) => {
           </span>
         </div>
         <div className="mt-2 flex items-center justify-between">
-          <span className="font-bold">${product.price.toFixed(2)}</span>
+          <span className="font-bold">₹{product.price.toFixed(2)}</span>
           <span className="text-xs text-muted-foreground">
             Stock: {product.stock} {product.unitType === 'kg' || product.unitType === 'liter' ? product.unitType : ''}
           </span>

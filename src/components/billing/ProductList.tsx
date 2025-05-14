@@ -42,7 +42,7 @@ const ProductList: React.FC<ProductListProps> = ({
     const scannedProduct = products.find(product => product.barcode === barcode);
     if (scannedProduct) {
       handleAddToBill(scannedProduct); // Add scanned product to bill
-      toast.success(`Product added: ${scannedProduct.name}`);
+      toast.success(`Product added: ₹{scannedProduct.name}`);
     } else {
       toast.error("Product not found for scanned barcode.");
     }
