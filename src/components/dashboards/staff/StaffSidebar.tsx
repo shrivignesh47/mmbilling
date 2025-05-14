@@ -20,7 +20,7 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ collapsed }) => {
 
   const navItems = [
     { icon: Home, label: "Dashboard", href: "/staff/dashboard" },
-    { icon: Home, label: "SalesReport", href: "/staff/SalesReport" },
+    // { icon: Home, label: "SalesReport", href: "/staff/SalesReport" },
     // { icon: Settings, label: "Settings", href: "/staff/settings" },
     // Conditionally add Inventory and Products items
     ...(profile?.shop_id && hasPermission('view_inventory') ? [{ icon: Clipboard, label: "Inventory", href: "/staff/inventory" }] : []),
