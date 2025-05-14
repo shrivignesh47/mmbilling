@@ -1,9 +1,9 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { QrCode, Barcode, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import BarcodeScannerComponent from 'react-qr-barcode-scanner';
 
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
@@ -14,53 +14,28 @@ interface BarcodeScannerProps {
 const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, isScanning, setIsScanning }) => {
   const [manualCode, setManualCode] = useState('');
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
-  const [codeBuffer, setCodeBuffer] = useState('');
-  const [lastKeyTime, setLastKeyTime] = useState(0);
+  const [scanError, setScanError] = useState<string | null>(null);
 
-  // Handle barcode scanner input
-  useEffect(() => {
-    if (!isScanning) return;
-
-    const scanTimeout = 30; // milliseconds between keystrokes
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const currentTime = new Date().getTime();
-      
-      // Check if this is part of a scan (keystrokes close together)
-      if (currentTime - lastKeyTime <= scanTimeout || codeBuffer === '') {
-        // Add to buffer if printable character or Enter
-        if (e.key.length === 1 || e.key === 'Enter') {
-          setLastKeyTime(currentTime);
-          
-          if (e.key === 'Enter') {
-            // Submit the scanned code when Enter is pressed
-            if (codeBuffer && codeBuffer !== lastScannedCode) {
-              onScan(codeBuffer);
-              setLastScannedCode(codeBuffer);
-              toast.success(`Scanned: ${codeBuffer}`);
-            }
-            setCodeBuffer('');
-          } else {
-            setCodeBuffer(prev => prev + e.key);
-          }
-        }
-      } else {
-        // Too much time elapsed, reset the buffer
-        setCodeBuffer(e.key.length === 1 ? e.key : '');
-        setLastKeyTime(currentTime);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isScanning, lastKeyTime, codeBuffer, lastScannedCode, onScan]);
+  const handleScan = (error: any, result: any) => {
+    if (result && result.text !== lastScannedCode) {
+      onScan(result.text);
+      setManualCode(result.text);  // Update manual code with scanned value
+      setLastScannedCode(result.text);
+      setScanError(null);
+      toast.success(`Scanned: ${result.text}`);
+    }
+    if (error) {
+      console.error("Error scanning barcode:", error);
+      setScanError("Unable to detect barcode. Please try again.");
+    }
+  };
 
   const handleSubmitManualCode = (e: React.FormEvent) => {
     e.preventDefault();
     if (manualCode.trim()) {
       onScan(manualCode.trim());
+      toast.success(`Manual Entry: ${manualCode.trim()}`);
+      setLastScannedCode(manualCode.trim());
       setManualCode('');
     }
   };
@@ -71,7 +46,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, isScanning, set
         <h3 className="text-lg font-medium">Barcode Scanner</h3>
         <Button 
           variant={isScanning ? "default" : "outline"} 
-          onClick={() => setIsScanning(!isScanning)}
+          onClick={() => {
+            setIsScanning(!isScanning);
+            console.log("Scanner toggled:", !isScanning);
+          }}
           size="sm"
         >
           {isScanning ? (
@@ -90,17 +68,16 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, isScanning, set
       
       {isScanning && (
         <div className="p-4 border rounded-md bg-muted/30">
-          <div className="text-center mb-3">
-            <QrCode className="h-6 w-6 mx-auto mb-1" />
-            <p className="text-sm">Scan a barcode or QR code to add product to bill</p>
-          </div>
-          
-          {codeBuffer && (
-            <div className="text-center text-sm text-muted-foreground animate-pulse">
-              Reading: {codeBuffer}
+          <BarcodeScannerComponent
+            onUpdate={handleScan}
+            width={500}
+            height={500}
+          />
+          {scanError && (
+            <div className="text-center mt-2 text-sm text-red-500">
+              {scanError}
             </div>
           )}
-          
           {lastScannedCode && (
             <div className="text-center mt-2 text-sm">
               Last scanned: <span className="font-mono">{lastScannedCode}</span>
@@ -115,7 +92,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, isScanning, set
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Enter barcode manually"
+              placeholder={manualCode || "Enter barcode manually"}
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
               className="pl-8"

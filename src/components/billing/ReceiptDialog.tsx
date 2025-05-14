@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader } from "@/components/
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import { Transaction } from "./types";
-import { formatQuantityWithUnit } from "@/components/utils/UnitUtils";
+import { formatQuantityWithUnit, UnitType } from "@/components/utils/UnitUtils";
 import { formatPaymentMethod } from "@/components/utils/BillingUtils";
 
 interface ReceiptDialogProps {
@@ -101,7 +101,7 @@ const ReceiptDialog: React.FC<ReceiptDialogProps> = ({
                   <div key={index} className="grid grid-cols-4 text-sm">
                     <div className="col-span-2">{item.name}</div>
                     <div className="text-right">
-                      {item.unitType ? formatQuantityWithUnit(item.quantity, item.unitType) : item.quantity}
+                      {item.unitType ? formatQuantityWithUnit(item.quantity, item.unitType as UnitType) : item.quantity}
                     </div>
                     <div className="text-right">
                       ${(item.price * item.quantity).toFixed(2)}

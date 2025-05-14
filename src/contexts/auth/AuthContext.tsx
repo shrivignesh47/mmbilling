@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfileLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, shops(*)')
+        .select('*, shops(*), custom_permissions') // Ensure custom_permissions are included
         .eq('id', userId)
         .single();
 
@@ -79,7 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: data.name || '',
           role: data.role,
           shop_id: data.shop_id,
-          shop_name: data.shops?.name || null
+          shop_name: data.shops?.name || null,
+          custom_permissions: data.custom_permissions || [] // Set custom_permissions
         };
         
         setProfile(profileData);

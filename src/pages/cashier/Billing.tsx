@@ -46,9 +46,8 @@ const Billing = () => {
     setSelectedCategory,
     setBillItems
   } = useBillingData(profile);
-  
   const {
-    handleAddToBill,
+    handleAddToBill,  // We'll use this one from useBillingActions
     handleUpdateItemQuantity,
     handleRemoveItem,
     handleClearBill,

@@ -1,10 +1,9 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/auth";
+import { AuthProvider, useAuth } from "@/contexts/auth"; // Import useAuth
 
 // Layouts
 import OwnerLayout from "@/layouts/OwnerLayout";
@@ -42,67 +41,82 @@ import CashierSettings from "@/pages/cashier/Settings";
 // Staff Pages
 import StaffDashboard from "@/pages/dashboards/staff/StaffDashboard";
 import StaffSettings from "@/pages/staff/Settings";
+// Ensure Inventory component is imported for staff
+import StaffInventory from "@/pages/staff/Inventory"; // Ensure this path is correct
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/shop/:shopSlug" element={<ShopLogin />} />
-            <Route index element={<Navigate to="/login" />} />
+const App = () => {
+  const { profile } = useAuth(); // Access profile from AuthProvider
+  console.log('Profile:', profile);
 
-            {/* Owner Routes */}
-            <Route path="/owner" element={<OwnerLayout />}>
-              <Route path="dashboard" element={<OwnerDashboard />} />
-              <Route path="shops" element={<Shops />} />
-              <Route path="users" element={<Users />} />
-              <Route path="roles" element={<Roles />} />
-              <Route path="notifications" element={<Notifications />} />
-              <Route path="settings" element={<Settings />} />
-              <Route index element={<Navigate to="/owner/dashboard" />} />
-            </Route>
+  // Define the hasRole function
+  const hasRole = (role: string) => {
+    return profile?.role === role;
+  };
 
-            {/* Manager Routes */}
-            <Route path="/manager" element={<ManagerLayout />}>
-              <Route path="dashboard" element={<ManagerDashboard />} />
-              <Route path="inventory" element={<Inventory />} />
-              <Route path="products" element={<Products />} />
-              <Route path="cashiers" element={<Cashiers />} />
-              <Route path="staff" element={<UserManagement />} />
-              <Route path="notifications" element={<StaffNotifications />} />
-              <Route path="settings" element={<ManagerSettings />} />
-              <Route index element={<Navigate to="/manager/dashboard" />} />
-            </Route>
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/shop/:shopSlug" element={<ShopLogin />} />
+              <Route index element={<Navigate to="/login" />} />
 
-            {/* Cashier Routes */}
-            <Route path="/cashier" element={<CashierLayout />}>
-              <Route path="dashboard" element={<CashierDashboard />} />
-              <Route path="billing" element={<Billing />} />
-              <Route path="settings" element={<CashierSettings />} />
-              <Route index element={<Navigate to="/cashier/dashboard" />} />
-            </Route>
+              {/* Owner Routes */}
+              <Route path="/owner" element={<OwnerLayout />}>
+                <Route path="dashboard" element={<OwnerDashboard />} />
+                <Route path="shops" element={<Shops />} />
+                <Route path="users" element={<Users />} />
+                <Route path="roles" element={<Roles />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="settings" element={<Settings />} />
+                <Route index element={<Navigate to="/owner/dashboard" />} />
+              </Route>
 
-            {/* Staff Routes */}
-            <Route path="/staff" element={<StaffLayout />}>
-              <Route path="dashboard" element={<StaffDashboard />} />
-              <Route path="settings" element={<StaffSettings />} />
-              <Route index element={<Navigate to="/staff/dashboard" />} />
-            </Route>
+              {/* Manager Routes */}
+              <Route path="/manager" element={<ManagerLayout />}>
+                <Route path="dashboard" element={<ManagerDashboard />} />
+                <Route path="inventory" element={<Inventory />} />
+                <Route path="products" element={<Products />} />
+                <Route path="cashiers" element={<Cashiers />} />
+                <Route path="staff" element={<UserManagement />} />
+                <Route path="notifications" element={<StaffNotifications />} />
+                <Route path="settings" element={<ManagerSettings />} />
+                <Route index element={<Navigate to="/manager/dashboard" />} />
+              </Route>
 
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+              {/* Cashier Routes */}
+              <Route path="/cashier" element={<CashierLayout />}>
+                <Route path="dashboard" element={<CashierDashboard />} />
+                <Route path="billing" element={<Billing />} />
+                <Route path="settings" element={<CashierSettings />} />
+                <Route index element={<Navigate to="/cashier/dashboard" />} />
+              </Route>
+
+              {/* Staff Routes */}
+              <Route path="/staff" element={<StaffLayout />}>
+                <Route path="dashboard" element={<StaffDashboard />} />
+                <Route path="settings" element={<StaffSettings />} />
+
+                    <Route path="inventory" element={<StaffInventory />} />
+                    <Route path="products" element={<Products />} />
+                <Route index element={<Navigate to="/staff/dashboard" />} />
+              </Route>
+
+              {/* Catch-all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

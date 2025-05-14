@@ -15,6 +15,11 @@ const StaffDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
 
+  // Define the hasPermission function
+  const hasPermission = (permission: string) => {
+    return profile?.custom_permissions?.includes(permission);
+  };
+
   useEffect(() => {
     if (profile?.shop_id) {
       fetchDashboardData();
@@ -66,9 +71,9 @@ const StaffDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Staff Dashboard</h2>
+        <h2 className="text-3cm font-bold tracking-tight">Staff Dashboard</h2>
         <p className="text-muted-foreground">
-          Welcome {profile?.name}! Here's your overview for today.
+          Welcome {profile?.name}! Here's your overview for today at {profile?.shop_name}.
         </p>
       </div>
 
@@ -151,14 +156,18 @@ const StaffDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <Button className="h-20 flex-col" variant="outline">
-                <Package className="h-5 w-5 mb-1" />
-                View Products
-              </Button>
-              <Button className="h-20 flex-col" variant="outline">
-                <Clipboard className="h-5 w-5 mb-1" />
-                Inventory Check
-              </Button>
+              {hasPermission('view_products') && (
+                <Button className="h-20 flex-col" variant="outline">
+                  <Package className="h-5 w-5 mb-1" />
+                  View Products
+                </Button>
+              )}
+              {hasPermission('sell_products') && (
+                <Button className="h-20 flex-col" variant="outline">
+                  <Receipt className="h-5 w-5 mb-1" />
+                  Sell Products
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

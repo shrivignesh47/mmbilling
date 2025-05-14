@@ -1,14 +1,13 @@
 
 import { UnitType } from "@/components/utils/UnitUtils";
-import { Json } from "@/integrations/supabase/types";
 
 export interface BillItem {
-  productId: string;
+  productId: string | number;
   name: string;
   price: number;
   quantity: number;
-  unitType?: UnitType;
-  barcode?: string;
+  barcode: string;
+  unitType?: string; // Add this optional property
 }
 
 export interface Product {

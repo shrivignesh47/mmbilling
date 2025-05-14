@@ -7,6 +7,7 @@ import { Search, Package, FileText, QrCode } from "lucide-react";
 import { Product } from "./types";
 import BarcodeScanner from "@/components/products/BarcodeScanner";
 import ProductCard from "./ProductCard";
+import { toast } from 'sonner';
 
 interface ProductListProps {
   products: Product[];
@@ -33,10 +34,20 @@ const ProductList: React.FC<ProductListProps> = ({
   setSearchTerm,
   setSelectedCategory,
   setIsScanning,
-  handleAddToBill,
-  handleBarcodeScanned,
+  handleAddToBill, // Ensure this function is passed correctly
   handleExportProducts
 }) => {
+
+  const handleLocalBarcodeScanned = (barcode: string) => {
+    const scannedProduct = products.find(product => product.barcode === barcode);
+    if (scannedProduct) {
+      handleAddToBill(scannedProduct); // Add scanned product to bill
+      toast.success(`Product added: ${scannedProduct.name}`);
+    } else {
+      toast.error("Product not found for scanned barcode.");
+    }
+  };
+
   return (
     <Card className="lg:col-span-2">
       <CardHeader className="space-y-4">
@@ -75,7 +86,7 @@ const ProductList: React.FC<ProductListProps> = ({
 
           {isScanning && (
             <BarcodeScanner 
-              onScan={handleBarcodeScanned}
+              onScan={handleLocalBarcodeScanned} // Use the renamed local function
               isScanning={isScanning}
               setIsScanning={setIsScanning}
             />
