@@ -24,7 +24,6 @@ const OwnerDashboard: React.FC = () => {
   const [cashierCount, setCashierCount] = useState(0);
   const [recentActivity, setRecentActivity] = useState<{action: string, description: string, date: string}[]>([]);
   const [topShops, setTopShops] = useState<ShopSummary[]>([]);
-  // Add state for dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<ShopSummary | null>(null);
 
@@ -53,33 +52,10 @@ const OwnerDashboard: React.FC = () => {
         setManagerCount(users?.filter(user => user.role === 'manager')?.length || 0);
         setCashierCount(users?.filter(user => user.role === 'cashier')?.length || 0);
 
-        // Create some sample data for shops (in a real app, this would come from your database)
-        setTopShops([
-          { name: "Main Branch", revenue: 12500, trend: 18 },
-          { name: "Downtown Location", revenue: 10200, trend: 12 },
-          { name: "West Side Store", revenue: 8750, trend: 5 },
-          { name: "East End Shop", revenue: 7300, trend: -2 },
-        ]);
+        // Fetch top shops and recent activity from the database
+        // setTopShops(fetchedTopShops);
+        // setRecentActivity(fetchedRecentActivity);
 
-        // Set recent activity
-        const now = new Date();
-        setRecentActivity([
-          {
-            action: "User created",
-            description: "New manager account created",
-            date: "Today"
-          },
-          {
-            action: "Shop updated", 
-            description: "Shop status changed to active",
-            date: "Yesterday"
-          },
-          {
-            action: "Settings changed",
-            description: "System preferences updated",
-            date: "Apr 28, 2025"
-          }
-        ]);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -129,7 +105,7 @@ const OwnerDashboard: React.FC = () => {
           />
           <StatCard
             title="Total Revenue"
-            value="$38,731.89"
+            value="₹38,731.89"
             icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
             description="Monthly revenue"
             trend={{ value: 8, isPositive: true }}
@@ -198,7 +174,7 @@ const OwnerDashboard: React.FC = () => {
                 >
                   <div>
                     <p className="text-sm font-medium">{shop.name}</p>
-                    <p className="text-xs text-muted-foreground">${shop.revenue.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">₹{shop.revenue.toLocaleString()}</p>
                   </div>
                   <span className={`text-xs font-medium ${
                     shop.trend >= 0 ? "text-success" : "text-destructive"
@@ -227,7 +203,7 @@ const OwnerDashboard: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm font-medium">Monthly Revenue</p>
-                  <p className="text-2xl font-bold">${selectedShop.revenue.toLocaleString()}</p>
+                  <p className="text-2xl font-bold">₹{selectedShop.revenue.toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium">Growth Trend</p>
