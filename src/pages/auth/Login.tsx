@@ -10,8 +10,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("admin@admin");
-  const [password, setPassword] = useState("admin123456");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [shops, setShops] = useState<{ name: string }[]>([]);
   const { login, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -119,7 +119,7 @@ const Login: React.FC = () => {
               />
             </div>
             <div className="text-sm text-muted-foreground">
-              Default admin login: admin@admin / admin123456
+        
             </div>
 
             {/* Shop-specific login links */}
