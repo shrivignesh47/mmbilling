@@ -25,7 +25,8 @@ const StaffSidebar: React.FC<StaffSidebarProps> = ({ collapsed }) => {
     // Conditionally add Inventory and Products items
     ...(profile?.shop_id && hasPermission('view_inventory') ? [{ icon: Clipboard, label: "Inventory", href: "/staff/inventory" }] : []),
     ...(profile?.shop_id && hasPermission('view_products') ? [{ icon: Package, label: "Products", href: "/staff/products" }] : []),
-    ...(profile?.shop_id && hasPermission('Transactions.view') ? [{ icon: Package, label: "Transactions", href: "/staff/Transactions" }] : [])
+    ...(profile?.shop_id && hasPermission('Transactions.view') ? [{ icon: Package, label: "Transactions", href: "/staff/Transactions" }] : []),
+    ...(profile?.shop_id && hasPermission('Sales.view') ? [{ icon: Package, label: "SalesReport", href: "/staff/SalesReport" }] : [])
   ];
 
   return (
