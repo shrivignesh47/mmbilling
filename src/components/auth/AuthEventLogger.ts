@@ -8,7 +8,9 @@ export const logAuthEvent = async (
   metadata?: any
 ) => {
   if (!userId) return;
-  
+
+  console.log(`Logging auth event: ${event} for user: ${userId}`); // Debugging line
+
   try {
     // Get the user's profile to find their shop_id
     const { data: profileData } = await supabase
@@ -20,18 +22,7 @@ export const logAuthEvent = async (
     const shopId = profileData?.shop_id || '00000000-0000-0000-0000-000000000000';
     
     // Use transactions table with event_type field to track auth events
-    await supabase
-      .from('transactions')
-      .insert({
-        transaction_id: `auth-${Date.now()}`,
-        user_id: userId,
-        event_type: event,
-        items: metadata || {},
-        shop_id: shopId,
-        amount: 0, // Not applicable for auth events
-        payment_method: 'system', // Not applicable for auth events
-        cashier_id: userId
-      });
+  
       
     console.log(`Auth event ${event} logged for user ${userId}`);
   } catch (error) {

@@ -21,6 +21,8 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     return date.toLocaleString();
   };
 
+  console.log("Rendering TransactionHistory with transactions:", recentTransactions);
+
   return (
     <Tabs defaultValue="recent">
       <TabsList>

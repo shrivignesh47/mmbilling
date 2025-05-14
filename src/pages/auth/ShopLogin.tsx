@@ -18,11 +18,23 @@ const ShopLogin: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { shopSlug } = useParams<{ shopSlug: string }>();
-
+  
   // Function to format shop slug to shop name (convert underscores to spaces)
   const formatShopSlugToName = (slug: string): string => {
     return decodeURIComponent(slug.replace(/_/g, ' '));
   };
+
+  // Get shop name from subdomain or path
+  const getShopName = () => {
+    const hostname = window.location.hostname;
+    if (hostname.includes('localhost')) {
+      const { shopSlug } = useParams<{ shopSlug: string }>();
+      return shopSlug ? formatShopSlugToName(shopSlug) : null;
+    }
+    return hostname.split('.')[0];
+  };
+  
+  const shopNameFromUrl = getShopName();
 
   useEffect(() => {
     const fetchShopDetails = async () => {
@@ -40,11 +52,11 @@ const ShopLogin: React.FC = () => {
         // Try to find the shop using different search methods (try various search approaches)
         let shopData = null;
         
-        // Method 1: Try exact match first
+        // Method 1: Try exact match first with trimmed and case-sensitive comparison
         const { data: exactMatch, error: exactMatchError } = await supabase
           .from('shops')
           .select('id, name')
-          .eq('name', possibleShopName)
+          .eq('name', possibleShopName.trim())
           .eq('is_active', true);
 
         if (!exactMatchError && exactMatch && exactMatch.length > 0) {
@@ -91,7 +103,7 @@ const ShopLogin: React.FC = () => {
             
           console.log("Available active shops:", allShops?.map(s => s.name) || []);
           
-          toast.error("Shop not found or inactive");
+          toast.error(`Shop "${possibleShopName}" not found. Please check the shop name or contact support.`);
           navigate("/login");
           return;
         }
@@ -136,25 +148,32 @@ const ShopLogin: React.FC = () => {
         return;
       }
 
-      // Verify that the user belongs to this shop
-      if (profile.shop_id !== shopId) {
-        toast.error("You are not authorized to access this shop");
-        return;
-      }
-
-      // Only allow managers and cashiers
-      if (profile.role === "owner") {
-        toast.error("Owners should use the main login page");
-        return;
+      // For admin domain, allow all logins
+      const isAdminDomain = window.location.hostname.includes('admin.localhost') || 
+                          window.location.hostname === 'localhost';
+      
+      // For shop subdomains, verify shop access
+      if (!isAdminDomain) {
+        if (profile.shop_id !== shopId) {
+          toast.error("You are not authorized to access this shop");
+          return;
+        }
+        
+        // Only allow shop-specific roles on shop subdomains
+        if (profile.role === "owner") {
+          toast.error("Owners should use the main login page");
+          return;
+        }
       }
 
       // Redirect based on role
-      if (profile.role === "manager") {
+      if (profile.role === "owner") {
+        navigate("/owner/dashboard");
+      } else if (profile.role === "manager") {
         navigate("/manager/dashboard");
       } else if (profile.role === "cashier") {
         navigate("/cashier/dashboard");
       } else if (profile.role === "staff" || profile.role.length > 10) {
-        // Handle both explicit staff role and custom roles (UUID format)
         navigate("/staff/dashboard");
       } else {
         navigate("/login");

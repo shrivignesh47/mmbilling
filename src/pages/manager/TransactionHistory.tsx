@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Receipt } from "lucide-react";
-import { Transaction } from "@/components/billing/types";
+import { Transaction, BillItem } from "@/components/billing/types"; // Import BillItem
 import { formatPaymentMethod } from "@/components/utils/BillingUtils";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +38,12 @@ const TransactionHistory: React.FC = () => {
 
       if (error) throw error;
 
-      setRecentTransactions(data || []);
+      setRecentTransactions((data || []).map(transaction => ({
+        ...transaction,
+        items: typeof transaction.items === "string" ? JSON.parse(transaction.items) : transaction.items,
+        payment_details: typeof transaction.payment_details === "string" ? JSON.parse(transaction.payment_details) : transaction.payment_details
+      })));
+      
     } catch (error) {
       console.error("Error fetching transactions:", error);
       toast.error("Failed to load transactions");
@@ -75,7 +80,7 @@ const TransactionHistory: React.FC = () => {
 
       if (error) throw error;
 
-      setYearlySales(data.filter(transaction => transaction.payment_method !== 'system') || []);
+      setYearlySales(data.filter(transaction => transaction.payment_method !== 'system','RAMESH') || []);
     } catch (error) {
       console.error("Error fetching yearly sales:", error);
       toast.error("Failed to load yearly sales");
