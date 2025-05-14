@@ -125,38 +125,39 @@ const CreateUserForm: React.FC<CreateUserFormProps> = ({ form, permissions, role
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="custom_permissions"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Custom Permissions (Optional)</FormLabel>
-              <div className="border rounded-md p-3 space-y-2 max-h-[200px] overflow-y-auto">
-                {permissions.map(permission => (
-                  <div key={permission.code} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`create-${permission.code}`}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      checked={field.value?.includes(permission.code)}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          field.onChange([...(field.value || []), permission.code]);
-                        } else {
-                          field.onChange(field.value?.filter(p => p !== permission.code));
-                        }
-                      }}
-                    />
-                    <label htmlFor={`create-${permission.code}`} className="ml-2 text-sm">
-                      {permission.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="custom_permissions"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Custom Permissions (Optional)</FormLabel>
+                <Select
+                  onValueChange={(selectedValue) => {
+                    const currentValues = field.value || [];
+                    const newValues = currentValues.includes(selectedValue)
+                      ? currentValues.filter((value) => value !== selectedValue)
+                      : [...currentValues, selectedValue];
+                    field.onChange(newValues);
+                  }}
+                  value={field.value.join(', ')} // Display selected values as a comma-separated string
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select permissions" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {permissions.map((permission) => (
+                      <SelectItem key={permission.code} value={permission.code}>
+                        {permission.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         
         <DialogFooter>
           <Button type="submit" className="w-full sm:w-auto">Create Staff Member</Button>
