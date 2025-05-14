@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { QrCode, Barcode, Search } from 'lucide-react';
 import { toast } from 'sonner';
-import BarcodeScannerComponent from 'react-qr-barcode-scanner';
+import QrReader from 'react-qr-scanner'; // Updated import
 
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
@@ -16,18 +16,19 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, isScanning, set
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
 
-  const handleScan = (error: any, result: any) => {
-    if (result && result.text !== lastScannedCode) {
-      onScan(result.text);
-      setManualCode(result.text);  // Update manual code with scanned value
-      setLastScannedCode(result.text);
+  const handleScan = (data: any) => {
+    if (data && data !== lastScannedCode) {
+      onScan(data);
+      setManualCode(data);  // Update manual code with scanned value
+      setLastScannedCode(data);
       setScanError(null);
-      toast.success(`Scanned: ${result.text}`);
+      toast.success(`Scanned: ${data}`);
     }
-    if (error) {
-      console.error("Error scanning barcode:", error);
-      setScanError("Unable to detect barcode. Please try again.");
-    }
+  };
+
+  const handleError = (error: any) => {
+    console.error("Error scanning barcode:", error);
+    setScanError("Unable to detect barcode. Please try again.");
   };
 
   const handleSubmitManualCode = (e: React.FormEvent) => {
@@ -68,10 +69,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, isScanning, set
       
       {isScanning && (
         <div className="p-4 border rounded-md bg-muted/30">
-          <BarcodeScannerComponent
-            onUpdate={handleScan}
-            width={500}
-            height={500}
+          <QrReader
+            delay={300}
+            onError={handleError}
+            onScan={handleScan}
+            style={{ width: '100%' }}
           />
           {scanError && (
             <div className="text-center mt-2 text-sm text-red-500">
