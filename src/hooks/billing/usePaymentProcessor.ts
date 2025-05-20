@@ -71,10 +71,10 @@ export const usePaymentProcessor = ({
   setIsReceiptDialogOpen,
   setIsPaymentProcessing
 }: UsePaymentProcessorProps) => {
-  const handleCheckout = async (method: 'cash' | 'card' | 'upi', paymentDetails: PaymentDetails) => {
+  const handleCheckout = async (method: 'cash' | 'card' | 'upi', paymentDetails: PaymentDetails): Promise<string> => {
     if (billItems.length === 0) {
       toast.error("No items in bill");
-      return;
+      return Promise.reject("No items in bill");
     }
     
     setIsPaymentProcessing(true);
@@ -132,9 +132,13 @@ export const usePaymentProcessor = ({
       
       // Open receipt dialog
       setIsReceiptDialogOpen(true);
+
+      // Return the transaction ID
+      return transactionId;
     } catch (error: any) {
       console.error("Error processing payment:", error);
       toast.error(`Payment failed: ${error.message || "Unknown error"}`);
+      return Promise.reject(error);
     } finally {
       setIsPaymentProcessing(false);
     }

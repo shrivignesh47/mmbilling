@@ -28,6 +28,11 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed }) => {
       icon: <Package className="h-5 w-5" />,
     },
     {
+      title: "Damaged Inventory",
+      href: "/manager/DamagedInventory",
+      icon: <Package className="h-5 w-5" />,
+    },
+    {
       title: "Products",
       href: "/manager/products",
       icon: <ShoppingBag className="h-5 w-5" />,
@@ -48,8 +53,23 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed }) => {
       icon: <Users className="h-5 w-5" />,
     },
     {
+      title: "Return",
+      href: "/manager/return",
+      icon: <Users className="h-5 w-5" />,
+    },
+    {
+      title: "customers",
+      href: "/manager/customers",
+      icon: <Users className="h-5 w-5" />,
+    },
+    {
       title: "Cashier Activity",
       href: "/manager/cashiers", // Updated to point to the Cashiers page
+      icon: <Users className="h-5 w-5" />,
+    },
+    {
+      title: "Billing",
+      href: "/manager/billing", // Updated to point to the Cashiers page
       icon: <Users className="h-5 w-5" />,
     },
     {

@@ -45,12 +45,29 @@ const Inventory: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [damagedInventoryCount, setDamagedInventoryCount] = useState(0);
 
   useEffect(() => {
     if (profile?.shop_id) {
       fetchProducts();
+      fetchDamagedInventoryCount(); // Fetch damaged inventory count
     }
   }, [profile?.shop_id]);
+
+  const fetchDamagedInventoryCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from("damaged_inventory")
+        .select("*", { count: "exact" });
+
+      if (error) throw error;
+
+      setDamagedInventoryCount(count || 0);
+    } catch (error: any) {
+      console.error("Error fetching damaged inventory count:", error);
+      toast.error("Error loading damaged inventory count: " + error.message);
+    }
+  };
 
   useEffect(() => {
     filterAndSortProducts();
@@ -148,7 +165,7 @@ const Inventory: React.FC = () => {
       </div>
 
       {/* Inventory Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4"> {/* Adjust grid columns */}
         <StatCard
           title="Total Stock"
           value={totalStock.toString()}
@@ -169,6 +186,15 @@ const Inventory: React.FC = () => {
           description="Unavailable products"
           className="border-destructive/50"
         />
+        <div onClick={() => navigate('/manager/DamagedInventory')} className="cursor-pointer">
+          <StatCard
+            title="Damaged Inventory"
+            value={damagedInventoryCount.toString()}
+            icon={<PackageX className="h-4 w-4 text-muted-foreground" />}
+            description="Damaged products"
+            className="border-red-500"
+          />
+        </div>
       </div>
 
       {/* Inventory Table Card */}

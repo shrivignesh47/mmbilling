@@ -19,7 +19,7 @@ const TransactionHistory: React.FC = () => {
   const [yearlySales, setYearlySales] = useState<Transaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-
+  const [searchTerm, setSearchTerm] = useState<string>("");
   useEffect(() => {
     if (profile?.shop_id) {
       fetchTransactions();
@@ -50,6 +50,14 @@ const TransactionHistory: React.FC = () => {
     }
   };
 
+  
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const filteredTransactions = recentTransactions.filter(transaction =>
+    transaction.transaction_id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   const fetchMonthlySales = async () => {
     try {
       const { data, error } = await supabase
@@ -80,7 +88,7 @@ const TransactionHistory: React.FC = () => {
 
       if (error) throw error;
 
-      setYearlySales(data.filter(transaction => transaction.payment_method !== 'system','RAMESH') || []);
+      // setYearlySales(data.filter(transaction => transaction.payment_method !== 'system','RAMESH') || []);
     } catch (error) {
       console.error("Error fetching yearly sales:", error);
       toast.error("Failed to load yearly sales");
@@ -111,6 +119,15 @@ const TransactionHistory: React.FC = () => {
         <p className="text-muted-foreground">View all transactions for your shop</p>
       </div>
 
+      <div className="flex justify-between items-center mb-4">
+        <input
+          type="text"
+          placeholder="Search Transaction ID"
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="border rounded-md p-2"
+        />
+      </div>
       <Tabs defaultValue="recent">
         <TabsList>
           <TabsTrigger value="recent">Recent Transactions</TabsTrigger>
@@ -134,6 +151,37 @@ const TransactionHistory: React.FC = () => {
                       <th className="py-3 px-4 text-center font-medium">Actions</th>
                     </tr>
                   </thead>
+                  <tbody>
+                    {filteredTransactions
+                      .filter((transaction) => transaction.payment_method !== 'system')
+                      .map((transaction) => (
+                        <tr key={transaction.id} className="border-b">
+                          <td className="py-3 px-4 font-mono text-xs">{transaction.transaction_id}</td>
+                          <td className="py-3 px-4">{formatDate(transaction.created_at)}</td>
+                          <td className="py-3 px-4 text-right">₹{transaction.amount.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-center capitalize">{formatPaymentMethod(transaction.payment_method)}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-center">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => viewTransaction(transaction)}
+                              >
+                                <Receipt className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                    ))}
+                    {filteredTransactions.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                          No transactions found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
                   <tbody>
                     {recentTransactions
                       .filter((transaction) => transaction.payment_method !== 'system')

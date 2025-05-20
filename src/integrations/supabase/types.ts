@@ -330,6 +330,68 @@ export type Database = {
           },
         ]
       }
+      returns: {
+        customers: {
+          Row: {
+            id: string;
+            name: string | null;
+            phone: string;
+            email: string | null;
+            address: string | null;
+            transaction_id: string;
+          };
+          Insert: {
+            id?: string;
+            name?: string | null;
+            phone: string;
+            email?: string | null;
+            address?: string | null;
+            transaction_id: string;
+          };
+          Update: {
+            id?: string;
+            name?: string | null;
+            phone?: string;
+            email?: string | null;
+            address?: string | null;
+            transaction_id?: string;
+          };
+          Relationships: [
+            {
+              foreignKeyName: "customers_transaction_id_fkey";
+              columns: ["transaction_id"];
+              isOneToOne: false;
+              referencedRelation: "transactions";
+              referencedColumns: ["transaction_id"];
+            }
+          ];
+        };
+        Row: {
+          id: string;
+          transaction_id: string;
+          product_id: string;
+          returned_quantity: number;
+          return_reason: string;
+          return_date: string;
+          status: string;
+        };
+        Insert: {
+          transaction_id: string;
+          product_id: string;
+          returned_quantity: number;
+          return_reason: string;
+          return_date: string;
+          status: string;
+        };
+        Update: {
+          transaction_id?: string;
+          product_id?: string;
+          returned_quantity?: number;
+          return_reason?: string;
+          return_date?: string;
+          status?: string;
+        };
+      }
     }
     Views: {
       [_ in never]: never
@@ -469,3 +531,12 @@ export const Constants = {
     },
   },
 } as const
+
+export type Customer = {
+  id: string;
+  name: string | null;
+  phone: string;
+  email: string | null;
+  address: string | null;
+  transaction_id: string;
+};

@@ -8,13 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, CreditCard, Wallet } from "lucide-react";
 import { BillItem, PaymentDetails } from "./types";
 import { calculateChange } from "@/components/utils/BillingUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CheckoutDialogProps {
   isOpen: boolean;
   onClose: () => void;
   billItems: BillItem[];
   totalAmount: number;
-  onCompletePayment: (method: 'cash' | 'card' | 'upi', details: PaymentDetails) => void;
+  onCompletePayment: (method: 'cash' | 'card' | 'upi', details: PaymentDetails) => Promise<string>; // Return Promise<string>
   isProcessing: boolean;
 }
 
@@ -30,8 +31,31 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
   const [cashAmount, setCashAmount] = useState<string>(totalAmount.toFixed(2));
   const [cardReference, setCardReference] = useState<string>('');
   const [upiReference, setUpiReference] = useState<string>('');
-  
-  const handleCashPayment = () => {
+  const [customerName, setCustomerName] = useState<string>('');
+  const [customerPhone, setCustomerPhone] = useState<string>('');
+  const [customerEmail, setCustomerEmail] = useState<string>('');
+  const [customerAddress, setCustomerAddress] = useState<string>('');
+
+  const handlePayment = () => {
+    if (!customerPhone) {
+      alert('Phone number is required');
+      return;
+    }
+
+    switch (paymentMethod) {
+      case 'cash':
+        handleCashPayment();
+        break;
+      case 'card':
+        handleCardPayment();
+        break;
+      case 'upi':
+        handleUpiPayment();
+        break;
+    }
+  };
+
+  const handleCashPayment = async () => {
     const amountPaid = parseFloat(cashAmount) || 0;
     if (amountPaid < totalAmount) {
       alert('Cash amount must be equal to or greater than the total amount');
@@ -44,10 +68,15 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
       changeAmount: calculateChange(totalAmount, amountPaid)
     };
     
-    onCompletePayment('cash', paymentDetails);
+    try {
+      const transactionId = await onCompletePayment('cash', paymentDetails);
+      saveCustomerDetails(transactionId);
+    } catch (error) {
+      console.error('Error completing payment:', error);
+    }
   };
-  
-  const handleCardPayment = () => {
+
+  const handleCardPayment = async () => {
     if (!cardReference) {
       alert('Please enter the card transaction reference');
       return;
@@ -58,10 +87,15 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
       reference: cardReference
     };
     
-    onCompletePayment('card', paymentDetails);
+    try {
+      const transactionId = await onCompletePayment('card', paymentDetails);
+      saveCustomerDetails(transactionId);
+    } catch (error) {
+      console.error('Error completing payment:', error);
+    }
   };
-  
-  const handleUpiPayment = () => {
+
+  const handleUpiPayment = async () => {
     if (!upiReference) {
       alert('Please enter the UPI transaction reference');
       return;
@@ -72,20 +106,35 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
       reference: upiReference
     };
     
-    onCompletePayment('upi', paymentDetails);
+    try {
+      const transactionId = await onCompletePayment('upi', paymentDetails);
+      saveCustomerDetails(transactionId);
+    } catch (error) {
+      console.error('Error completing payment:', error);
+    }
   };
-  
-  const handlePayment = () => {
-    switch (paymentMethod) {
-      case 'cash':
-        handleCashPayment();
-        break;
-      case 'card':
-        handleCardPayment();
-        break;
-      case 'upi':
-        handleUpiPayment();
-        break;
+
+  const saveCustomerDetails = async (transactionId: string) => {
+    const customerDetails = {
+      transaction_id: transactionId,
+      phone: customerPhone,
+      name: customerName || null,
+      email: customerEmail || null,
+      address: customerAddress || null,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([customerDetails]);
+
+      if (error) {
+        console.error('Error saving customer details:', error);
+      } else {
+        console.log('Customer details saved:', data);
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
     }
   };
 
@@ -101,7 +150,46 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
             <span>Total Amount:</span>
             <span>₹{totalAmount.toFixed(2)}</span>
           </div>
-          
+
+          {/* Customer Details */}
+          <div className="space-y-2">
+            <Label htmlFor="customerName">Name (Optional)</Label>
+            <Input
+              id="customerName"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Customer Name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="customerPhone">Phone Number</Label>
+            <Input
+              id="customerPhone"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder="Phone Number"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="customerEmail">Email (Optional)</Label>
+            <Input
+              id="customerEmail"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="Email"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="customerAddress">Address (Optional)</Label>
+            <Input
+              id="customerAddress"
+              value={customerAddress}
+              onChange={(e) => setCustomerAddress(e.target.value)}
+              placeholder="Address"
+            />
+          </div>
+
           <Tabs defaultValue="cash" onValueChange={(val) => setPaymentMethod(val as 'cash' | 'card' | 'upi')}>
             <TabsList className="grid grid-cols-3 mb-4">
               <TabsTrigger value="cash">Cash</TabsTrigger>

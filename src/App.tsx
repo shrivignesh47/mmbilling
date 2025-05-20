@@ -33,7 +33,9 @@ import StaffNotifications from "@/pages/manager/StaffNotifications";
 import ManagerSettings from "@/pages/manager/Settings";
 import Cashiers from "@/pages/manager/Cashiers";
 import TransactionHistory from "@/pages/manager/TransactionHistory";
-
+import  {ReturnModule } from "./components/salesreturn/ReturnModule";
+import Customer from "./pages/manager/Customer";
+import DamagedInventory from "./pages/manager/DamagedInventory";
 
 
 // Cashier Pages
@@ -93,6 +95,11 @@ const App = () => {
                 <Route path="settings" element={<ManagerSettings />} />
                 <Route path="transactions" element={<TransactionHistory   />} />
                 <Route path="SalesReport" element={<SalesReport/>} />
+                <Route path="return" element={<ReturnModule/>} />
+                <Route path="billing" element={<Billing/>} />
+                <Route path="dashboard" element={<CashierDashboard/>} />     
+                <Route path="customers" element={<Customer />} />
+                <Route path="DamagedInventory" element={<DamagedInventory/>} />
                 <Route index element={<Navigate to="/manager/dashboard" />} />
               </Route>
 
