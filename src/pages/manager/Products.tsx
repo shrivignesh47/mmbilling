@@ -27,6 +27,13 @@ interface Product {
   created_at?: string;
   shop_id?: string;
   updated_at?: string;
+  gstPercentage: number;
+  sgst: number;
+  cgst: number;
+  mrp: number; // Add MRP field
+  StockPrice : number; // Add Selling Price field
+  w_rate: number; // Add Weight Rate field
+  TotalAmount: number; // Add Amount field
 }
 
 // Define the database product type to match what comes from Supabase
@@ -43,6 +50,13 @@ interface DatabaseProduct {
   created_at: string | null;
   shop_id: string;
   updated_at: string | null;
+  gstPercentage: number;
+  sgst: number;
+  cgst: number;
+  mrp: number; // Add MRP field
+  StockPrice : number; // Add Selling Price field
+  w_rate: number; // Add Weight Rate field
+  TotalAmount: number; // Add Amount field
 }
 
 const Products = () => {
@@ -216,7 +230,13 @@ const Products = () => {
             stock: formData.stock,
             sku: formData.sku,
             barcode: barcode,
-            unitType: formData.unitType
+            unitType: formData.unitType,
+            sgst:formData.sgst,
+            cgst:formData.cgst,
+            mrp:formData.mrp,
+            StockPrice:formData.StockPrice,
+            w_rate:formData.w_rate,
+            TotalAmount:formData.TotalAmount,
           })
           .select();
         
@@ -288,8 +308,11 @@ const Products = () => {
   };
 
   // Format currency to Rupees
-  const formatCurrency = (amount: number) => {
-    return `₹${amount.toFixed(2)}`;
+  const formatCurrency = (amount: number | null) => {
+      if (amount === null || amount === undefined) {
+          return 'Not updated';
+      }
+      return `₹${amount.toFixed(2)}`;
   };
 
   return (
@@ -344,7 +367,14 @@ const Products = () => {
           stock: selectedProduct.stock,
           sku: selectedProduct.sku || '',
           barcode: selectedProduct.barcode,
-          unitType: selectedProduct.unitType
+          unitType: selectedProduct.unitType,
+          sgst: selectedProduct.sgst,
+          cgst: selectedProduct.cgst,
+          mrp: selectedProduct.mrp,
+          StockPrice: selectedProduct.StockPrice,
+          w_rate: selectedProduct.w_rate,
+          TotalAmount: selectedProduct.TotalAmount,
+          gstPercentage: selectedProduct.gstPercentage,
         } : undefined}
         exportBarcodes={handleExportAllBarcodes}
       />

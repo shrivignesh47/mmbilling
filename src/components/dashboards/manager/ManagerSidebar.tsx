@@ -23,6 +23,16 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed }) => {
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
+      title: "Purchase Entry",
+      href: "/manager/PurchaseEntry",
+      icon: <LayoutDashboard className="h-5 w-5" />,
+    },
+    {
+      title: "Purchase Inventory",
+      href: "/manager/PurchaseInventory",
+      icon: <Package className="h-5 w-5" />,
+    },
+    {
       title: "Inventory",
       href: "/manager/inventory",
       icon: <Package className="h-5 w-5" />,

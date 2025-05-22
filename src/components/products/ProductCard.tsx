@@ -17,6 +17,10 @@ interface Product {
   barcode?: string;
   unitType: UnitType;
   sales_count: number;
+  gstPercentage: number;
+  mrp: number; // Add MRP field
+  StockPrice : number; // Add Selling Price field
+  w_rate: number;
 }
 
 interface ProductCardProps {
@@ -58,8 +62,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <CardContent className="pb-2">
         <div className="space-y-2">
           <div className="flex justify-between">
-            <span className="text-muted-foreground text-sm">Price:</span>
+            <span className="text-muted-foreground text-sm">SellingPrice:</span>
             <span className="font-medium">{formatCurrency(product.price)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground text-sm">StockPrice:</span>
+            <span className="font-medium">{formatCurrency(product.StockPrice)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground text-sm">MRP:</span>
+            <span className="font-medium">{formatCurrency(product.mrp)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground text-sm">WeightRate:</span>
+            <span className="font-medium">{product.w_rate} units</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground text-sm">Stock:</span>

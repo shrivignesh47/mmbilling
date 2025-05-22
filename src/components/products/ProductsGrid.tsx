@@ -15,7 +15,11 @@ interface Product {
   sku: string;
   barcode?: string;
   sales_count: number;
-  unitType: UnitType; // Add this property to fix the error
+  unitType: UnitType;
+  gstPercentage: number;
+  mrp: number; // Add MRP field
+  StockPrice : number; // Add Selling Price field
+  w_rate: number; // Add this property to fix the error
 }
 
 interface ProductsGridProps {

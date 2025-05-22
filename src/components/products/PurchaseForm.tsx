@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import BarcodeGenerator from '@/components/products/BarcodeGenerator';
 import { generateBarcode } from '@/components/utils/BarcodeGeneratorUtils';
 import { UnitType, getUnitOptionsForCategory } from '@/components/utils/UnitUtils';
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProductFormProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export interface ProductFormData {
   sku: string;
   barcode?: string;
   unitType: UnitType;
+  shop_id: string;
   gstPercentage: number;
   sgst: number;
   cgst: number;
@@ -35,7 +37,7 @@ export interface ProductFormData {
   TotalAmount: number; // Add Amount field
 }
 
-const ProductForm: React.FC<ProductFormProps> = ({
+const PurchaseForm: React.FC<ProductFormProps> = ({
   isOpen,
   onClose,
   onSubmit,
@@ -50,14 +52,47 @@ const ProductForm: React.FC<ProductFormProps> = ({
     stock: 0,
     sku: '',
     unitType: 'piece',
+    shop_id: '', // Initialize shop_id
     gstPercentage: 18,
     sgst: 0,
     cgst: 0,
     mrp: 0, // Initialize MRP
-    StockPrice : 0, // Initialize Selling Price
+    StockPrice: 0, // Initialize Selling Price
     w_rate: 0, // Initialize Weight Rate
     TotalAmount: 0, // Initialize Amount
   });
+
+  useEffect(() => {
+    const fetchShopId = async () => {
+      const userId = localStorage.getItem('user_id');
+      if (!userId) {
+        console.error('User ID not found');
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching shop_id:', profileError);
+        return;
+      }
+
+      const shop_id = profileData?.shop_id;
+      if (shop_id) {
+        setFormData(prev => ({
+          ...prev,
+          shop_id // Set shop_id in formData
+        }));
+      }
+    };
+
+    fetchShopId();
+  }, []);
+
 
   const [unitOptions, setUnitOptions] = useState<UnitType[]>(['piece', 'kg', 'liter', 'pack', 'ml']);
   const [isGSTEnabled, setIsGSTEnabled] = useState<boolean>(false);
@@ -94,6 +129,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
     setFormData({
       ...formData,
       [id]: type === 'number' ? (value === '' ? 0 : parseFloat(value)) : value
+    });
+  };
+
+  const handleStockChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setFormData({
+      ...formData,
+      stock: value === '' ? 0 : parseInt(value, 10) // Parse stock as integer
     });
   };
 
@@ -138,15 +181,17 @@ const ProductForm: React.FC<ProductFormProps> = ({
     e.preventDefault();
     
     // Generate barcode if not already present
-    if (!formData.barcode && formData.id) {
+    if (!formData.barcode) {
       formData.barcode = generateBarcode({
-        id: formData.id,
+        id: formData.id || `product-${Date.now()}`, // Ensure id is provided
         sku: formData.sku
       });
     }
     
-    onSubmit(formData);
+    onSubmit(formData); // Include shop_id in formData
   };
+
+  console.log('Form Data:', formData); // Debug lin
 
   const weightCategories = ['Vegetables', 'Fruits', 'Dairy', 'Packaged Food','Beverages','Canned Goods'];
 
@@ -237,7 +282,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 min="0"
                 step="1"
                 value={formData.stock}
-                onChange={handleChange}
+                onChange={handleStockChange} // Use the new handler
                 required
               />
             </div>
@@ -381,4 +426,4 @@ const ProductForm: React.FC<ProductFormProps> = ({
   );
 };
 
-export default ProductForm;
+export default PurchaseForm;

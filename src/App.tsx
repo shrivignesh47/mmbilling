@@ -36,7 +36,8 @@ import TransactionHistory from "@/pages/manager/TransactionHistory";
 import  {ReturnModule } from "./components/salesreturn/ReturnModule";
 import Customer from "./pages/manager/Customer";
 import DamagedInventory from "./pages/manager/DamagedInventory";
-
+import PurchaseEntry from "./pages/manager/PurchaseEntry";
+import PurchaseInventory from "./pages/manager/PurchaseInventory";
 
 // Cashier Pages
 import CashierDashboard from "@/pages/dashboards/cashier/CashierDashboard";
@@ -100,6 +101,8 @@ const App = () => {
                 <Route path="dashboard" element={<CashierDashboard/>} />     
                 <Route path="customers" element={<Customer />} />
                 <Route path="DamagedInventory" element={<DamagedInventory/>} />
+                <Route path="PurchaseEntry" element={<PurchaseEntry/>} />
+                <Route path="PurchaseInventory" element={<PurchaseInventory/>} />
                 <Route index element={<Navigate to="/manager/dashboard" />} />
               </Route>
 
