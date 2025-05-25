@@ -38,6 +38,7 @@ import Customer from "./pages/manager/Customer";
 import DamagedInventory from "./pages/manager/DamagedInventory";
 import PurchaseEntry from "./pages/manager/PurchaseEntry";
 import PurchaseInventory from "./pages/manager/PurchaseInventory";
+import SupplierPage from "./pages/manager/Supplier";
 
 // Cashier Pages
 import CashierDashboard from "@/pages/dashboards/cashier/CashierDashboard";
@@ -103,6 +104,7 @@ const App = () => {
                 <Route path="DamagedInventory" element={<DamagedInventory/>} />
                 <Route path="PurchaseEntry" element={<PurchaseEntry/>} />
                 <Route path="PurchaseInventory" element={<PurchaseInventory/>} />
+                <Route path="Supplier" element={<SupplierPage/>} />
                 <Route index element={<Navigate to="/manager/dashboard" />} />
               </Route>
 

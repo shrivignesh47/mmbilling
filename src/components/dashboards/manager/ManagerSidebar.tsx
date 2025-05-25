@@ -33,6 +33,11 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({ collapsed }) => {
       icon: <Package className="h-5 w-5" />,
     },
     {
+      title: "Supplier",
+      href: "/manager/Supplier",
+      icon: <Users className="h-5 w-5" />,
+    },
+    {
       title: "Inventory",
       href: "/manager/inventory",
       icon: <Package className="h-5 w-5" />,
