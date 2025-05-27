@@ -1,73 +1,58 @@
-# Welcome to your Lovable project
+# 💼 MMBILLING  
+**Empower Your Business with Seamless Billing Solutions**
 
-## Project info
+---
 
-**URL**: https://lovable.dev/projects/5ed644d4-d7b5-4302-b294-293a9111031e
+## 🚀 Built With
 
-## How can I edit this code?
+- 🧑‍💻 **TypeScript** – Strongly typed, modern JavaScript
+- 🎨 **Tailwind CSS** – Utility-first CSS framework for responsive design
+- ⚡ **Vite** – Lightning-fast build tool with hot module replacement
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 📚 Table of Contents
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5ed644d4-d7b5-4302-b294-293a9111031e) and start prompting.
+- [📖 Overview](#-overview)
+- [⚙️ Getting Started](#-getting-started)
+  - [🔧 Prerequisites](#-prerequisites)
+  - [📦 Installation](#-installation)
+  - [▶️ Usage](#️-usage)
+- [🧪 Testing](#-testing)
+- [📬 Contact](#-contact)
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 📖 Overview
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+**MMBILLING** is a powerful, full-featured billing and inventory management system tailored for modern web applications. It combines robust user authentication, real-time data handling, and role-based access control to simplify the billing process for businesses of all sizes.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### ✨ Key Features
 
-Follow these steps:
+- 🎨 **TypeScript Configuration** – Modern JavaScript compatibility with strict type-checking
+- ⚡ **Tailwind CSS Integration** – Clean, responsive, utility-first UI design
+- 🚀 **Vite Build Tool** – Lightning-fast builds and hot module replacement
+- 🔑 **Role-Based Access Control** – Define permissions for roles like *Owner*, *Manager*, *Cashier*, and *Staff*
+- 📊 **Comprehensive Billing System** – Receipt generation and transaction history tracking
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## ⚙️ Getting Started
 
-# Step 3: Install the necessary dependencies.
-npm i
+Follow these steps to set up and run the project locally.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### 🔧 Prerequisites
 
-**Edit a file directly in GitHub**
+Make sure you have the following installed:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- 💻 [Node.js](https://nodejs.org/) (v14 or newer)
+- 📦 npm (Node Package Manager)
 
-**Use GitHub Codespaces**
+### 📦 Installation
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Clone the repository and install dependencies:
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/5ed644d4-d7b5-4302-b294-293a9111031e) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+```bash
+git clone https://github.com/shrivignesh47/mmbilling
+cd mmbilling
+npm install
