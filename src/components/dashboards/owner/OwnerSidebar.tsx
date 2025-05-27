@@ -78,7 +78,7 @@ const OwnerSidebar: React.FC<OwnerSidebarProps> = ({ collapsed = false }) => {
     <div className="space-y-6 flex flex-col h-full">
       {!collapsed && (
         <div className="px-3 py-2">
-          <h2 className="mb-2 px-1 text-lg font-semibold">Owner Dashboard</h2>
+          <h2 className="mb-2 px-1 text-lg font-semibold">Admin Dashboard</h2>
         </div>
       )}
       

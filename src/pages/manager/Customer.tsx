@@ -70,6 +70,23 @@ const CustomerDashboard: React.FC = () => {
     );
   }
 
+  // Group customers by phone number
+  const groupedByPhone: { [phone: string]: Customer[] } = {};
+  customers.forEach((customer) => {
+    if (!groupedByPhone[customer.phone]) {
+      groupedByPhone[customer.phone] = [];
+    }
+    groupedByPhone[customer.phone].push(customer);
+  });
+
+  // Filtered and grouped customers by phone
+  const filteredGroups = Object.values(groupedByPhone)
+    .filter(group =>
+      group[0].name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group[0].email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group[0].phone.includes(searchTerm)
+    );
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
       <motion.div 
@@ -168,52 +185,67 @@ const CustomerDashboard: React.FC = () => {
 
         {/* Customer Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCustomers.map((customer) => (
-            <motion.div
-              key={customer.id}
-              className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              whileHover={{ y: -4 }}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                    {customer.name}
-                  </h3>
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
-                      <Mail className="h-4 w-4 mr-2" />
-                      <a href={`mailto:${customer.email}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
-                        {customer.email}
-                      </a>
-                    </div>
-                    <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
-                      <Phone className="h-4 w-4 mr-2" />
-                      <a href={`tel:${customer.phone}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
-                        {customer.phone}
-                      </a>
-                    </div>
-                    <div className="flex items-start text-sm text-slate-600 dark:text-slate-400">
-                      <MapPin className="h-4 w-4 mr-2 mt-1 flex-shrink-0" />
-                      <span>{customer.address}</span>
+          {filteredGroups.map((group, idx) => {
+            const customer = group[0]; // Use the first customer for display info
+            const transactions = group
+              .filter(c => c.transaction_id)
+              .map(c => c.transaction_id);
+
+            return (
+              <motion.div
+                key={customer.phone}
+                className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                whileHover={{ y: -4 }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+                      {customer.name}
+                    </h3>
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
+                        <Mail className="h-4 w-4 mr-2" />
+                        <a href={`mailto:${customer.email}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
+                          {customer.email}
+                        </a>
+                      </div>
+                      <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
+                        <Phone className="h-4 w-4 mr-2" />
+                        <a href={`tel:${customer.phone}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
+                          {customer.phone}
+                        </a>
+                      </div>
+                      <div className="flex items-start text-sm text-slate-600 dark:text-slate-400">
+                        <MapPin className="h-4 w-4 mr-2 mt-1 flex-shrink-0" />
+                        <span>{customer.address}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              {customer.transaction_id && (
-                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Transaction ID: {customer.transaction_id}
-                  </p>
-                </div>
-              )}
-            </motion.div>
-          ))}
+                {/* Show all transaction IDs for this phone group */}
+                {transactions.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
+                      Transactions:
+                    </p>
+                    <ul className="space-y-1">
+                      {transactions.map((tid, i) => (
+                        <li key={i} className="text-xs text-slate-500 dark:text-slate-400">
+                          {tid}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
 
-        {filteredCustomers.length === 0 && (
+        {filteredGroups.length === 0 && (
           <div className="text-center py-12">
             <p className="text-slate-600 dark:text-slate-400">No customers found matching your search.</p>
           </div>

@@ -74,7 +74,7 @@ const OwnerDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Owner Dashboard</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
         <p className="text-muted-foreground">
           Welcome back, {profile?.name || "Owner"}! Here's your system overview.
         </p>

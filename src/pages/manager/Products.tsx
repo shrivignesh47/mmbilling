@@ -187,10 +187,35 @@ const Products = () => {
     setIsProductFormOpen(true);
   };
 
-  const openEditProductForm = (product: Product) => {
+  const openEditProductForm = async (product: Product) => {
     setProductFormMode('edit');
-    setSelectedProduct(product);
-    setIsProductFormOpen(true);
+    setIsProductFormOpen(false); // Close if already open, to reset state
+  
+    // Fetch latest product data from API
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", product.id)
+        .single();
+  
+      if (error) throw error;
+  
+      // Prepare the product object as per your Product interface
+      const latestProduct: Product = {
+        ...data,
+        barcode: data.barcode || data.sku || `PROD-${data.id.slice(-8).toUpperCase()}`,
+        unitType: data.unitType || 'piece',
+        sku: data.sku || '',
+        category: data.category || '',
+        sales_count: data.sales_count || 0,
+      };
+  
+      setSelectedProduct(latestProduct);
+      setIsProductFormOpen(true);
+    } catch (error: any) {
+      toast.error("Failed to load product for editing: " + error.message);
+    }
   };
 
   const handleViewBarcode = (product: Product) => {
@@ -266,7 +291,13 @@ const Products = () => {
             price: formData.price,
             stock: formData.stock,
             sku: formData.sku,
-            unitType: formData.unitType
+            unitType: formData.unitType, 
+            sgst:formData.sgst,
+            cgst:formData.cgst,
+            mrp:formData.mrp,
+            StockPrice:formData.StockPrice,
+            w_rate:formData.w_rate,
+            TotalAmount:formData.TotalAmount
           })
           .eq("id", selectedProduct.id);
         
@@ -347,38 +378,42 @@ const Products = () => {
         products={products}
         formatCurrency={formatCurrency}
         handleViewBarcode={handleViewBarcode}
-        openEditProductForm={openEditProductForm}
+        openEditProductForm={openEditProductForm} // Pass the updated function
         handleDeleteProduct={handleDeleteProduct}
         openAddProductForm={openAddProductForm}
         resetFilters={resetFilters}
       />
       
       {/* Product Form Dialog */}
-      <ProductForm
-        isOpen={isProductFormOpen}
-        onClose={() => setIsProductFormOpen(false)}
-        onSubmit={handleProductFormSubmit}
-        productMode={productFormMode}
-        initialData={selectedProduct ? {
-          id: selectedProduct.id,
-          name: selectedProduct.name,
-          category: selectedProduct.category || '',
-          price: selectedProduct.price,
-          stock: selectedProduct.stock,
-          sku: selectedProduct.sku || '',
-          barcode: selectedProduct.barcode,
-          unitType: selectedProduct.unitType,
-          sgst: selectedProduct.sgst,
-          cgst: selectedProduct.cgst,
-          mrp: selectedProduct.mrp,
-          StockPrice: selectedProduct.StockPrice,
-          w_rate: selectedProduct.w_rate,
-          TotalAmount: selectedProduct.TotalAmount,
-          gstPercentage: selectedProduct.gstPercentage,
-        } : undefined}
-        exportBarcodes={handleExportAllBarcodes}
-      />
-      
+      <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
+        <DialogContent className="max-w-xs w-full p-1">
+          <ProductForm
+            key={selectedProduct ? selectedProduct.id : 'add'}
+            isOpen={isProductFormOpen}
+            onClose={() => setIsProductFormOpen(false)}
+            onSubmit={handleProductFormSubmit}
+            productMode={productFormMode}
+            initialData={selectedProduct ? {
+              id: selectedProduct.id,
+              name: selectedProduct.name,
+              category: selectedProduct.category || '',
+              price: selectedProduct.price,
+              stock: selectedProduct.stock,
+              sku: selectedProduct.sku || '',
+              barcode: selectedProduct.barcode,
+              unitType: selectedProduct.unitType,
+              sgst: selectedProduct.sgst,
+              cgst: selectedProduct.cgst,
+              mrp: selectedProduct.mrp,
+              StockPrice: selectedProduct.StockPrice,
+              w_rate: selectedProduct.w_rate,
+              TotalAmount: selectedProduct.TotalAmount,
+              gstPercentage: selectedProduct.gstPercentage,
+            } : undefined}
+            exportBarcodes={handleExportAllBarcodes}
+          />
+        </DialogContent>
+      </Dialog>
       {/* Barcode Dialog */}
       <Dialog open={isBarcodeDialogOpen} onOpenChange={setIsBarcodeDialogOpen}>
         <DialogContent>

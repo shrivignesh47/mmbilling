@@ -144,7 +144,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
         sku: formData.sku
       });
     }
-    
+
+    // Debug: Log formData to verify fields before sending
+    console.log('Submitting formData:', formData);
+
     onSubmit(formData);
   };
 
@@ -154,21 +157,21 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] lg:max-w-[800px]">
+      <DialogContent className="max-w-2xl w-full p-4">
         <DialogHeader>
           <DialogTitle>
             {productMode === 'add' ? 'Add New Product' : 'Edit Product'}
           </DialogTitle>
           <DialogDescription>
-            {productMode === 'add' 
-              ? 'Add a new product to your inventory' 
+            {productMode === 'add'
+              ? 'Add a new product to your inventory'
               : 'Update product information'}
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleFormSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
+            <div>
               <Label htmlFor="name">Product Name</Label>
               <Input
                 id="name"
@@ -178,8 +181,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 required
               />
             </div>
-            
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="category">Category</Label>
               <Select 
                 value={formData.category}
@@ -195,8 +197,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="sku">SKU (Optional)</Label>
               <Input
                 id="sku"
@@ -205,8 +206,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 placeholder="Enter product SKU"
               />
             </div>
-
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="unitType">Unit Type</Label>
               <Select 
                 value={formData.unitType}
@@ -229,7 +229,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="stock">Stock</Label>
               <Input
                 id="stock"
@@ -241,7 +241,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="mrp">MRP (₹)</Label>
               <Input
                 id="mrp"
@@ -253,19 +253,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="StockPrice ">StockPrice (₹)</Label>
+            <div>
+              <Label htmlFor="StockPrice">StockPrice (₹)</Label>
               <Input
                 id="StockPrice"
                 type="number"
                 min="0"
                 step="0.01"
-                value={formData.StockPrice }
+                value={formData.StockPrice}
                 onChange={handleChange}
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="price">SellingPrice (₹)</Label>
               <Input
                 id="price"
@@ -277,8 +277,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 required
               />
             </div>
-
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="w_rate">Weight Rate</Label>
               <Input
                 id="w_rate"
@@ -291,7 +290,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 disabled={!isWeightCategory}
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="gstPercentage">GST Percentage</Label>
               <Input
                 id="gstPercentage"
@@ -304,7 +303,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="sgst">SGST</Label>
               <Input
                 id="sgst"
@@ -315,8 +314,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 readOnly
               />
             </div>
-            
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="cgst">CGST</Label>
               <Input
                 id="cgst"
@@ -327,22 +325,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 readOnly
               />
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="gstCheckbox"
-                  type="checkbox"
-                  checked={isGSTEnabled}
-                  onChange={handleGSTCheckboxChange}
-                  className="h-4 w-4"
-                />
-                <Label htmlFor="gstCheckbox" className="text-sm">
-                  Apply GST
-                </Label>
-              </div>
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 flex items-center gap-2">
+              <Input
+                id="gstCheckbox"
+                type="checkbox"
+                checked={isGSTEnabled}
+                onChange={handleGSTCheckboxChange}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="gstCheckbox" className="text-sm">
+                Apply GST
+              </Label>
             </div>
-
-            <div className="space-y-2">
+            <div className="col-span-1 md:col-span-2 lg:col-span-3">
               <Label htmlFor="TotalAmount">Total Amount (₹)</Label>
               <Input
                 id="TotalAmount"
@@ -354,7 +349,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
               />
             </div>
           </div>
-
           <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={onClose} className="mr-2">
               Cancel
@@ -365,6 +359,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
           </DialogFooter>
         </form>
         
+        {/* Remove this block to hide Product Barcode in edit form */}
+        {/* 
         {productMode === 'edit' && formData.id && (
           <BarcodeGenerator 
             product={{
@@ -376,6 +372,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
             onExportBarcodes={exportBarcodes}
           />
         )}
+        */}
       </DialogContent>
     </Dialog>
   );
