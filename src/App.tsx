@@ -39,6 +39,7 @@ import DamagedInventory from "./pages/manager/DamagedInventory";
 import PurchaseEntry from "./pages/manager/PurchaseEntry";
 import PurchaseInventory from "./pages/manager/PurchaseInventory";
 import SupplierPage from "./pages/manager/Supplier";
+import PurchaseInvoice from "./pages/manager/PurchaseInvoice";
 
 // Cashier Pages
 import CashierDashboard from "@/pages/dashboards/cashier/CashierDashboard";
@@ -105,6 +106,7 @@ const App = () => {
                 <Route path="PurchaseEntry" element={<PurchaseEntry/>} />
                 <Route path="PurchaseInventory" element={<PurchaseInventory/>} />
                 <Route path="Supplier" element={<SupplierPage/>} />
+                <Route path="PurchaseInvoice" element={<PurchaseInvoice/>} />
                 <Route index element={<Navigate to="/manager/dashboard" />} />
               </Route>
 
