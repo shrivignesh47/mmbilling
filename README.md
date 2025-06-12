@@ -1,58 +1,124 @@
-# 💼 MMBILLING  
-**Empower Your Business with Seamless Billing Solutions**
+💼 MMBILLING
+Empower Your Business with Seamless Billing Solutions
 
----
+A modern, scalable, and intuitive billing and inventory management system built with TypeScript, React, and Supabase. Designed to support everything from single-shop setups to full franchise-level operations.
 
-## 🚀 Built With
+🚀 Built With
+🧑‍💻 TypeScript – Strongly typed, modern JavaScript for safer code
 
-- 🧑‍💻 **TypeScript** – Strongly typed, modern JavaScript
-- 🎨 **Tailwind CSS** – Utility-first CSS framework for responsive design
-- ⚡ **Vite** – Lightning-fast build tool with hot module replacement
+⚛️ React – Component-based frontend framework
 
----
+🎨 Tailwind CSS – Utility-first CSS framework for fast, responsive UI
 
-## 📚 Table of Contents
+⚡ Vite – Lightning-fast build tool with HMR
 
-- [📖 Overview](#-overview)
-- [⚙️ Getting Started](#-getting-started)
-  - [🔧 Prerequisites](#-prerequisites)
-  - [📦 Installation](#-installation)
-  - [▶️ Usage](#️-usage)
-- [🧪 Testing](#-testing)
-- [📬 Contact](#-contact)
+🧰 Supabase – Backend-as-a-Service (Auth, Database, Storage)
 
----
+📚 Table of Contents
+📖 Overview
 
-## 📖 Overview
+✨ Key Features
 
-**MMBILLING** is a powerful, full-featured billing and inventory management system tailored for modern web applications. It combines robust user authentication, real-time data handling, and role-based access control to simplify the billing process for businesses of all sizes.
+⚙️ Getting Started
 
-### ✨ Key Features
+🔧 Prerequisites
 
-- 🎨 **TypeScript Configuration** – Modern JavaScript compatibility with strict type-checking
-- ⚡ **Tailwind CSS Integration** – Clean, responsive, utility-first UI design
-- 🚀 **Vite Build Tool** – Lightning-fast builds and hot module replacement
-- 🔑 **Role-Based Access Control** – Define permissions for roles like *Owner*, *Manager*, *Cashier*, and *Staff*
-- 📊 **Comprehensive Billing System** – Receipt generation and transaction history tracking
+📦 Installation
 
----
+▶️ Usage
 
-## ⚙️ Getting Started
+🧪 Testing
 
-Follow these steps to set up and run the project locally.
+📬 Contact
 
-### 🔧 Prerequisites
+📖 Overview
+MMBILLING is a feature-rich web-based billing system that simplifies day-to-day sales, inventory, and customer management. Initially inspired by local shop needs, it has grown into a robust platform supporting admin-controlled multi-shop setups, supplier dashboards, sales analytics, user roles, and more.
 
-Make sure you have the following installed:
+✨ Key Features
+🔐 Authentication with Supabase Auth
 
-- 💻 [Node.js](https://nodejs.org/) (v14 or newer)
-- 📦 npm (Node Package Manager)
+🧾 Smart Billing Interface
 
-### 📦 Installation
+QR code, barcode, product ID or name search-based billing
 
+Real-time stock adjustment
+
+📊 Advanced Sales Dashboard
+
+Daily, monthly, yearly reports with export to Excel
+
+🧾 Custom Invoice Generator
+
+Multiple templates, editable design, and exportable receipts
+
+📦 Inventory & Supplier Management
+
+Add/manage stock, supplier profiles, and purchase entries
+
+🧑‍🤝‍🧑 Multi-User Role System
+
+Roles like Owner, Manager, Cashier, Staff with permission control
+
+🏬 Franchise Support
+
+Admin can create and manage multiple shops with isolated data or shared dashboards
+
+🔁 Return & Refund Management
+
+🔔 Push Notifications
+
+Broadcast updates to sub-users/shop users
+
+📁 Excel Import/Export
+
+🎯 Customer Dashboard
+
+Track customer activity and sales insights
+
+⚙️ Getting Started
+Follow the steps below to run the project locally.
+
+🔧 Prerequisites
+Ensure the following are installed:
+
+Node.js (v14+)
+
+npm (or yarn)
+
+Supabase account for backend setup
+
+📦 Installation
 Clone the repository and install dependencies:
 
-```bash
+bash
+Copy
+Edit
 git clone https://github.com/shrivignesh47/mmbilling
 cd mmbilling
 npm install
+▶️ Usage
+Create a .env file and add your Supabase credentials:
+
+env
+Copy
+Edit
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+Then start the development server:
+
+bash
+Copy
+Edit
+npm run dev
+The app should now be running at http://localhost:5173
+
+🧪 Testing
+Basic unit and integration testing coming soon with support for:
+
+React Testing Library
+
+Jest
+
+📬 Contact
+Feel free to connect or reach out for demos, collaborations, or improvements:
+
