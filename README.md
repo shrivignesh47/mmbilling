@@ -1,7 +1,7 @@
 # 💼 **MMBILLING**  
 **Empower Your Business with Seamless Billing Solutions**
 
-A modern, scalable, and intuitive billing and inventory management system built with **TypeScript**, **React**, and **Supabase**. Designed to support everything from **single-shop setups** to **full franchise-level operations**.
+A modern, scalable, and intuitive billing and inventory management system built with **TypeScript**, **React**, and **Supabase** Designed to support everything from **single-shop setups** to **full franchise-level operations**.
 
 ---
 
